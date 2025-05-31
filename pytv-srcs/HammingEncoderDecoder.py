@@ -48,7 +48,7 @@ class hamming_spec:
         self.backward_correct_frame_cnt_width = math.ceil(math.log2(self.backward_correct_frame_cnt+1)) + 1
         self.forward_false_frame_cnt_width = math.ceil(math.log2(self.forward_false_frame_cnt+1)) + 1
         # Set errors in frame head and transmitted bits
-        self.frame_head_errors = [1,5,6,7]   # frames with error in frame head
+        self.frame_head_errors = []   # frames with error in frame head  e.g. frame_head_errors = [1,5,6,7]
         self.generate_info_bits()
         self.generate_encoded_bits_expected()
         print(f"info_bits:")
@@ -734,11 +734,11 @@ for i_tx_frame in range(1, my_spec.n_tx_frames):
 
 print('\033[34m' + f"================Validation Summary================" + '\033[0m')
 if n_failed_frames_encoding == 0:
-    print('\033[32m' + f"All encoding frames passed" + '\033[0m')
+    print('\033[32m' + f"All frames passed encoding validation" + '\033[0m')
 else:
     print('\033[31m' + f"{n_failed_frames_encoding} encoding frames failed" + '\033[0m')
 
 if n_failed_frames_decoding == 0:
-    print('\033[32m' + f"All decoding frames passed" + '\033[0m')
+    print('\033[32m' + f"All frames passed decoding validation" + '\033[0m')
 else:
     print('\033[31m' + f"{n_failed_frames_decoding} decoding frames failed" + '\033[0m')
