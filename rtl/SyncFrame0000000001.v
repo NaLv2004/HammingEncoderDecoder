@@ -14,7 +14,7 @@
  reg [6:0] input_bit_counter;
  reg data_sync_out_delayed;
  assign synchronizer_state = sychronizer_state_reg;
- assign is_frame_sychronized = (sychronizer_state_reg == 3'b010)? 1'b1 : 1'b0;
+ assign is_frame_sychronized = ((sychronizer_state_reg == 3'b010)||(sychronizer_state_reg == 3'b001))? 1'b1 : 1'b0;
  assign data_sync_out = data_sync_out_delayed; //frame_head_buffer[7:7];
  always @ (posedge clk_out or posedge rst)
  begin

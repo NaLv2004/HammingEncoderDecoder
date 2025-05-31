@@ -29,7 +29,7 @@ class hamming_spec:
         self.frame_head_length = 8
         self.n_info_groups = 2
         self.group_length = 16
-        self.n_tx_frames = 100
+        self.n_tx_frames = 20
         self.frame_length = int(self.frame_head_length + round(self.group_length/self.info_length) * self.code_length * self.n_info_groups)
         self.data_length = self.group_length * self.n_info_groups
         self.input_counter_len = math.ceil(math.log2(self.group_length*self.n_info_groups))+1
@@ -47,6 +47,8 @@ class hamming_spec:
         self.forward_false_frame_cnt = 0     # Number of false frames during forward protection to re-enter capture state
         self.backward_correct_frame_cnt_width = math.ceil(math.log2(self.backward_correct_frame_cnt+1)) + 1
         self.forward_false_frame_cnt_width = math.ceil(math.log2(self.forward_false_frame_cnt+1)) + 1
+        # Set errors in frame head and transmitted bits
+        self.frame_head_errors = [1,5,6,7]   # frames with error in frame head
         self.generate_info_bits()
         self.generate_encoded_bits_expected()
         print(f"info_bits:")
@@ -75,7 +77,7 @@ class hamming_spec:
             encoded_bits_single_frame_str = ""
             # frame head
             encoded_bits_single_frame += [0,1,1,1,1,1,1,0]
-            if (False) :
+            if (i in self.frame_head_errors) :
                encoded_bits_single_frame_str += '01101110'
             else:
                encoded_bits_single_frame_str += '01111110'
@@ -100,29 +102,13 @@ class hamming_spec:
                         encoded_bits_single_frame_str += (str(bit))
             
             if self.flag_interleave:
-                # reverse the order of bits
-                # print(f"encoded bits")
-                # print(f"{encoded_bits_single_frame}")
                 encoded_bits_single_frame_reverse = encoded_bits_single_frame[::-1]
-                # print(f"encoded bits reverse")
-                # print(f"{encoded_bits_single_frame_reverse}")
-                # print(f"encoded_bits_single_frame_after")
-                # print(f"{encoded_bits_single_frame}")
                 encoded_bits_single_frame_reverse_interleaved = encoded_bits_single_frame_reverse.copy()
                 # interleave the bits
                 n_codewords = self.n_info_groups*math.ceil(self.group_length/self.info_length)
                 for i_codeword in range(0, n_codewords):
                     for j_bit in range(0, self.code_length):
-                        encoded_bits_single_frame_reverse_interleaved[j_bit*n_codewords+i_codeword] = encoded_bits_single_frame_reverse[i_codeword*self.code_length+j_bit]
-                        #print(f"{j_bit*n_codewords+i_codeword}<= {i_codeword*self.code_length+j_bit}")
-                        
-                # for i_codeword in range(0, n_codewords):
-                #     for j_bit in range(0, self.code_length):
-                #         if encoded_bits_single_frame_reverse_interleaved[j_bit*n_codewords+i_codeword] == encoded_bits_single_frame_reverse[i_codeword*self.code_length+j_bit]:
-                #             print(f"Equal")
-                #         else: 
-                #             print(f"FAIL")
-                        
+                        encoded_bits_single_frame_reverse_interleaved[j_bit*n_codewords+i_codeword] = encoded_bits_single_frame_reverse[i_codeword*self.code_length+j_bit]           
                 encoded_bits_single_frame = encoded_bits_single_frame_reverse_interleaved[::-1]
                 encoded_bits_single_frame_str = ""
                 for i_bit in range(0, self.frame_length):
@@ -200,9 +186,21 @@ def ModuleHammingEncoder(hamming_spec):
     #/ assign input_write_idx =`hamming_spec.input_counter_len`'d `hamming_spec.data_length-1`-input_counter_reg;
     #/ assign output_read_idx =`hamming_spec.output_counter_len`'d `hamming_spec.frame_length-1`-output_counter_reg;
     #/ // frame head for synchronization
-    #/ assign tx_frame_wire[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`] = (n_frames_sent == 1) ?`hamming_spec.frame_head_length`'b01111110 : 
-    #/                                                                                                                  (n_frames_sent == 5) ? `hamming_spec.frame_head_length`'b01111110
-    #/                                                                                                                  : `hamming_spec.frame_head_length`'b01111110;
+    # / assign tx_frame_wire[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`] = (n_frames_sent == 1) ?`hamming_spec.frame_head_length`'b01111110 : 
+    # /                                                                                                                  (n_frames_sent == 5) ? `hamming_spec.frame_head_length`'b01111110
+    # /    
+    #                                                                                                      : `hamming_spec.frame_head_length`'b01111110;
+    # Set the frame heads in error
+    if hamming_spec.frame_head_errors is not None:
+        #/ assign tx_frame_wire[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`] = 
+        for idx, i_error_head in enumerate(hamming_spec.frame_head_errors):
+            #/     (n_frames_sent == `i_error_head`) ? `hamming_spec.frame_head_length`'b01101110 : 
+            pass
+        pass
+        #/     `hamming_spec.frame_head_length`'b01111110;
+    else:
+        #/ assign tx_frame_wire[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`] = `hamming_spec.frame_head_length`'b01111110;
+        pass
     if hamming_spec.flag_interleave:
         #/ assign tx_frame_wire_interleaved[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`] = tx_frame_wire[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`];
         #/ // Interleaving
@@ -312,7 +310,7 @@ def ModuleSyncFrame(hamming_spec):
     #/ reg [`hamming_spec.output_counter_len-1`:0] input_bit_counter;
     #/ reg data_sync_out_delayed;
     #/ assign synchronizer_state = sychronizer_state_reg;
-    #/ assign is_frame_sychronized = (sychronizer_state_reg == `SYNC`)? 1'b1 : 1'b0;
+    #/ assign is_frame_sychronized = ((sychronizer_state_reg == `SYNC`)||(sychronizer_state_reg == `FORWARD_PROTECTION`))? 1'b1 : 1'b0;
     #/ assign data_sync_out = data_sync_out_delayed; //frame_head_buffer[`hamming_spec.frame_head_length-1`:`hamming_spec.frame_head_length-1`];
     # // sliding window register for detecting frame head  
     #/ always @ (posedge clk_out or posedge rst)
@@ -728,7 +726,7 @@ for i_tx_frame in range(1, my_spec.n_tx_frames):
     print(f"Decoded bits: {decoded_bits_single_frame_str}")
     # if equal, print 'pass' with green color
     # else, print 'fail' with red color
-    if encoded_bits_single_frame_str == expected_encoded_bits_single_frame_str:
+    if decoded_bits_single_frame_str == expected_decoded_bits_single_frame_str:
         print('\033[32m' + f"Pass for frame {i_tx_frame}" + '\033[0m')
     else:
         print('\033[31m' + f"Fail for frame {i_tx_frame}" + '\033[0m')
