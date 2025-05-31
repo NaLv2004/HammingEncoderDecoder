@@ -41,7 +41,9 @@
  assign input_write_idx =6'd 31-input_counter_reg;
  assign output_read_idx =7'd 63-output_counter_reg;
  // frame head for synchronization
- assign tx_frame_wire[63:56] = (n_frames_sent == 1) ?8'b01101110 : 8'b01111110;
+ assign tx_frame_wire[63:56] = (n_frames_sent == 1) ?8'b01111110 :
+                                                                                                                  (n_frames_sent == 5) ? 8'b01111110
+                                                                                                                  : 8'b01111110;
  // assign encoding input to data input buffer,  assign tx_frame_wire to encoding output
  // instantiate single encoder for each group of data
 SingleEncoder0000000001  u_0000000001_SingleEncoder0000000001(.data_in(input_data_wire[3:0]), .data_out(tx_frame_wire[6:0]));

@@ -1,3 +1,70 @@
+// === Contents from: Decoder0000000001.v ===
+ module Decoder0000000001 (
+     input clk_decoder_in,
+     input clk_decoder_out,
+     input rst,
+     input decoder_data_valid,
+     input data_decoder_in,
+     output data_decoder_out
+ );
+ reg [63:0] decoder_input_buffer;
+ reg [31:0] decoder_output_buffer;
+ reg [6:0] decoder_input_counter_reg;
+ reg [5:0] decoder_output_counter_reg;
+ reg decoder_frame_ready;
+ reg decoder_data_out_reg;
+ wire [63:0] decoder_input_data_wire;
+ wire [31:0] decoder_output_data_wire;
+ wire [5:0] decoder_output_read_idx;
+ wire [6:0] decoder_input_write_idx;
+ assign decoder_input_data_wire = decoder_input_buffer;
+ // assign decoder_output_data_wire = decoder_output_buffer;
+ assign decoder_output_read_idx =6'd 31-decoder_output_counter_reg;
+ assign decoder_input_write_idx =7'd 63-decoder_input_counter_reg;
+ assign data_decoder_out = decoder_data_out_reg;//decoder_output_buffer[decoder_output_read_idx];
+ // decoding the input data (instantiate 8 single decoders)
+SingleDecoder0000000001  u_0000000001_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[6:0]), .decoder_out(decoder_output_data_wire[3:0]));
+SingleDecoder0000000001  u_0000000002_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[13:7]), .decoder_out(decoder_output_data_wire[7:4]));
+SingleDecoder0000000001  u_0000000003_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[20:14]), .decoder_out(decoder_output_data_wire[11:8]));
+SingleDecoder0000000001  u_0000000004_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[27:21]), .decoder_out(decoder_output_data_wire[15:12]));
+SingleDecoder0000000001  u_0000000005_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[34:28]), .decoder_out(decoder_output_data_wire[19:16]));
+SingleDecoder0000000001  u_0000000006_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[41:35]), .decoder_out(decoder_output_data_wire[23:20]));
+SingleDecoder0000000001  u_0000000007_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[48:42]), .decoder_out(decoder_output_data_wire[27:24]));
+SingleDecoder0000000001  u_0000000008_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[55:49]), .decoder_out(decoder_output_data_wire[31:28]));
+ always @(posedge clk_decoder_in or posedge rst)
+ begin
+     if (rst) begin
+         decoder_input_buffer <= 7'b0;
+         decoder_output_buffer <= 32'b0;
+         decoder_input_counter_reg <= 0;
+         decoder_output_counter_reg <= 0;
+         decoder_frame_ready <= 1'b0;
+         decoder_data_out_reg <= 1'b0;
+     end else begin
+         if (decoder_data_valid) begin
+             decoder_input_buffer[decoder_input_write_idx] <= data_decoder_in;
+             decoder_input_counter_reg <= decoder_input_counter_reg + 1;
+             if (decoder_input_counter_reg == 63) begin
+                  decoder_input_counter_reg <= 0;
+                  decoder_frame_ready <= 1'b1;
+                  decoder_output_buffer <= decoder_output_data_wire;
+             end
+         end
+     end
+ end
+ always @(posedge clk_decoder_out or posedge rst)
+ begin
+     if (decoder_frame_ready) begin
+         decoder_data_out_reg <= decoder_output_buffer[decoder_output_read_idx];
+         decoder_output_counter_reg <= decoder_output_counter_reg + 1;
+     end
+     if (decoder_output_counter_reg == 31) begin
+         decoder_output_counter_reg <= 0;
+     end
+ end
+ endmodule
+
+
 // === Contents from: HammingEncoder0000000001.v ===
  module HammingEncoder0000000001 (
      input clk_in,
@@ -42,7 +109,9 @@
  assign input_write_idx =6'd 31-input_counter_reg;
  assign output_read_idx =7'd 63-output_counter_reg;
  // frame head for synchronization
- assign tx_frame_wire[63:56] = (n_frames_sent == 1) ?8'b01101110 : 8'b01111110;
+ assign tx_frame_wire[63:56] = (n_frames_sent == 1) ?8'b01111110 :
+                                                                                                                  (n_frames_sent == 5) ? 8'b01111110
+                                                                                                                  : 8'b01111110;
  // assign encoding input to data input buffer,  assign tx_frame_wire to encoding output
  // instantiate single encoder for each group of data
 SingleEncoder0000000001  u_0000000001_SingleEncoder0000000001(.data_in(input_data_wire[3:0]), .data_out(tx_frame_wire[6:0]));
@@ -109,6 +178,27 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  endmodule
 
 
+// === Contents from: SingleDecoder0000000001.v ===
+ module SingleDecoder0000000001 (
+ input [6:0] decoder_in,
+ output [3:0] decoder_out
+ );
+ wire [2:0] syndrome;
+ wire [3:0] is_info_bit_wrong;
+ assign syndrome[2] = decoder_in[6]^decoder_in[5]^decoder_in[4]^decoder_in[2];
+ assign syndrome[1] = decoder_in[6]^decoder_in[5]^decoder_in[3]^decoder_in[1];
+ assign syndrome[0] = decoder_in[6]^decoder_in[4]^decoder_in[3]^decoder_in[0];
+ assign is_info_bit_wrong[3] = (syndrome==3'b111) ? 1'b1 : 1'b0;
+ assign is_info_bit_wrong[2] = (syndrome==3'b110) ? 1'b1 : 1'b0;
+ assign is_info_bit_wrong[1] = (syndrome==3'b101) ? 1'b1 : 1'b0;
+ assign is_info_bit_wrong[0] = (syndrome==3'b011) ? 1'b1 : 1'b0;
+ assign decoder_out[3] = decoder_in[6]^is_info_bit_wrong[3];
+ assign decoder_out[2] = decoder_in[5]^is_info_bit_wrong[2];
+ assign decoder_out[1] = decoder_in[4]^is_info_bit_wrong[1];
+ assign decoder_out[0] = decoder_in[3]^is_info_bit_wrong[0];
+ endmodule
+
+
 // === Contents from: SingleEncoder0000000001.v ===
  module SingleEncoder0000000001 (
      input  [4-1:0] data_in,
@@ -132,7 +222,8 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
      input rst,
      input data_in,
      output is_frame_sychronized,
-     output [2:0] synchronizer_state
+     output [2:0] synchronizer_state,
+     output data_sync_out
  );
  wire [2:0] synchronizer_state;
  reg [2:0] sychronizer_state_reg;
@@ -140,23 +231,27 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  reg [0:0] forward_false_frame_cnt;
  reg [7:0] frame_head_buffer;
  reg [6:0] input_bit_counter;
+ reg data_sync_out_delayed;
  assign synchronizer_state = sychronizer_state_reg;
  assign is_frame_sychronized = (sychronizer_state_reg == 3'b010)? 1'b1 : 1'b0;
+ assign data_sync_out = data_sync_out_delayed; //frame_head_buffer[7:7];
  always @ (posedge clk_out or posedge rst)
  begin
      if (rst) begin
+         data_sync_out_delayed <= 1'b0;
          sychronizer_state_reg <= 3'b000;
          frame_head_buffer <= 64'b0;
          // is_frame_sychronized <= 1'b0;
      end else begin
+         data_sync_out_delayed <= frame_head_buffer[7:7];
          frame_head_buffer[0] <= data_in;
-          frame_head_buffer[1] <= frame_head_buffer[0];
-          frame_head_buffer[2] <= frame_head_buffer[1];
-          frame_head_buffer[3] <= frame_head_buffer[2];
-          frame_head_buffer[4] <= frame_head_buffer[3];
-          frame_head_buffer[5] <= frame_head_buffer[4];
-          frame_head_buffer[6] <= frame_head_buffer[5];
-          frame_head_buffer[7] <= frame_head_buffer[6];
+         frame_head_buffer[1] <= frame_head_buffer[0];
+         frame_head_buffer[2] <= frame_head_buffer[1];
+         frame_head_buffer[3] <= frame_head_buffer[2];
+         frame_head_buffer[4] <= frame_head_buffer[3];
+         frame_head_buffer[5] <= frame_head_buffer[4];
+         frame_head_buffer[6] <= frame_head_buffer[5];
+         frame_head_buffer[7] <= frame_head_buffer[6];
      end
  end
  // state transition logic
@@ -215,6 +310,9 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
                                 sychronizer_state_reg <= 3'b001;
                                 forward_false_frame_cnt <= 0;
                             end
+                       end else begin
+                            input_bit_counter <= input_bit_counter + 1;
+                            sychronizer_state_reg <= 3'b010;
                        end
                   end
           3'b001:
@@ -255,6 +353,8 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  reg data_in_reg;
  wire is_frame_sychronized;
  wire [2:0] synchronizer_state;
+ wire data_sync_out;
+ wire data_decoder_out;
  initial begin
     clk_in = 0;
     clk_out = 1;
@@ -262,8 +362,12 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  always #10 clk_in = ~clk_in;  // 20ns周期
  always #5 clk_out = ~clk_out; // 10ns周期
  assign data_in = data_in_reg;
+ // Instantiate the Hamming Encoder
 HammingEncoder0000000001  u_0000000001_HammingEncoder0000000001(.clk_in(clk_in), .clk_out(clk_out), .rst(rst), .data_in(data_in), .data_valid(data_valid), .data_out(data_out), .data_in_ready(data_in_ready));
-SyncFrame0000000001  u_0000000001_SyncFrame0000000001(.clk_out(clk_out), .rst(rst), .data_in(data_out), .is_frame_sychronized(is_frame_sychronized), .synchronizer_state(synchronizer_state));
+ // Instantiate frame synchronizer
+SyncFrame0000000001  u_0000000001_SyncFrame0000000001(.clk_out(clk_out), .rst(rst), .data_in(data_out), .is_frame_sychronized(is_frame_sychronized), .synchronizer_state(synchronizer_state), .data_sync_out(data_sync_out));
+ // Instantiate the Hamming Decoder
+Decoder0000000001  u_0000000001_Decoder0000000001(.clk_decoder_in(clk_out), .clk_decoder_out(clk_in), .rst(rst), .decoder_data_valid(is_frame_sychronized), .data_decoder_in(data_sync_out), .data_decoder_out(data_decoder_out));
  task send_data;
      input [31:0] data;
      integer i;
@@ -284,315 +388,120 @@ SyncFrame0000000001  u_0000000001_SyncFrame0000000001(.clk_out(clk_out), .rst(rs
      # 20 rst = 1'b0;
      # 20 data_valid = 1'b1;
      @ (posedge clk_in);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01010011111000011010001101111011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11011011111001100000000011110101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00000110101000010001000100001110);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01001011010001000011010111011000);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01101100011001111111111100001101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10011000100101101111101110110011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11001100100100100011110100101000);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10001101111000000101100000011001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11100101000001111001011010010101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11110110100010010001010000000111);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10110100101001010111001010010101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01011111011011110010001011010011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00111110001110110010101011101001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00100101010110101001100001100000);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00011111001111000001110110000101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11110010111001010000000001010100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11001010010011101010100011111100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11010011010101100110001010010011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00101001100010010010100111010010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11000111101101010000101110000010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00100010110010100001101100101101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10001011001010110010111010000000);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10000000000001101000111001110010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00000110111010011001000100110010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10101001111101011001100001010011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10101101101010011000101111101110);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01110011000010100000010011001100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00110101101000101010111010111100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10101100011001000010111011010001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01010000011010110110011000111101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10110111111001011101111110011000);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01111100111010100111011100001011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01000000110001110011001101100010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10111100011100111010101110010011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01000001000110110101011000001101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10101000011001100100110010100011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11011111011101001000001010101001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00001011011001101011110110010011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11110100100111101001001100101110);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11100111110111001011001111101111);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00010101101110011011100010110001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01010101111010011110001101110001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10111101101101011111010000101001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10010101101011011011101111010100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00101011010111000111011101111100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11011000010010110000011011000100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01111101010101101101110111111101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00010111100110001000100110010011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11101001000100101100010101000000);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11100100110111110100000010000110);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11100111110101000110011101011101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00110001010000000111000001011110);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11101011000101001110100011100010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10101100101010111001011111001100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01111110111011100011110001010011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01010101011110001000111100101101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10111001000000011011110010000010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00110000101000100011110001001110);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10010011111010111001100010100010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00000001110111011101110010000001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10010001110110000010101100000010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11101010110000010100111001110101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11111010110011000001101000011101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11010000100010011001110001110001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11010011011000111011000100001011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10100100110011110010110011111000);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00011111110111100011001111001111);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00000011011111000110110110001100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00001011010000100010000000010001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00111001011101101000101101011111);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00111001001101111010001010000001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10001010110100011111111011111001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01101100111100011011001001011101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00010100011100001111110011011100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00000011111101111000100011100010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10101001111100010110110101001110);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00001111111101111011100110010010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01101001010000101101000110011010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00111001000010000110000111100010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00110100100010000111011010001111);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11111011101110000110100110011001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10011111110000001111000101110010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01110110111101101100110001101001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10010001110010010010101101001001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11001001111100000011101100110011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11100110000110001000111100110100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10010000010001110111011010010000);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10110010010101101000100001001010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01110111111101100000100111111111);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11110001001111101101111111111110);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b11100011001011111000011010000010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10100010010010100110101111100100);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10000010010010010000111001100001);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b00111101100010010111000000000010);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01001100101110000111110101001111);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10111111101010111101110011011110);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01011110000000000110000000010101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01111000001000010111011111001101);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b10010001010100000100001000101011);
-     // #20 data_valid = 1'b1;
-     // @ (posedge clk_in)
-     send_data(32'b01100101111011011100110001101110);
+     send_data(32'b00000000011111001100110101111101);
+     send_data(32'b10001101010111100111101101101010);
+     send_data(32'b01010011011111100011000110011111);
+     send_data(32'b01001110010001001001011100101101);
+     send_data(32'b11111001100001101101011110001111);
+     send_data(32'b01110000110100110001010111101010);
+     send_data(32'b11101101011011011011101001010101);
+     send_data(32'b10001111001101100010111110100100);
+     send_data(32'b00111110111010000110110110010011);
+     send_data(32'b01000000111100111111101010110001);
+     send_data(32'b10111001001000001010000100000001);
+     send_data(32'b01011101001000010001110000100110);
+     send_data(32'b01000110011011010000010101111101);
+     send_data(32'b11001000110000001110010010111011);
+     send_data(32'b11101101011010011101010101110000);
+     send_data(32'b11001011110010000101111100101001);
+     send_data(32'b10100011111011011110111011000111);
+     send_data(32'b00101100110000011100001010001110);
+     send_data(32'b10110011000111011010011000101111);
+     send_data(32'b01111110100010100000100111110011);
+     send_data(32'b00000111100100100100000111001010);
+     send_data(32'b01110110010010111110001010110011);
+     send_data(32'b10010001100111001110111000000100);
+     send_data(32'b01010110000000001100110011010010);
+     send_data(32'b10000010000010001111100010110000);
+     send_data(32'b10100001011111100001101001101001);
+     send_data(32'b11010101101001011110100011100110);
+     send_data(32'b10010101011001011111111111110010);
+     send_data(32'b11101100001011110000000111110001);
+     send_data(32'b00110010110011110110100000000100);
+     send_data(32'b10111011100010000100000110101000);
+     send_data(32'b11011101011110101111100010101000);
+     send_data(32'b00111001010100000011111100000000);
+     send_data(32'b11110011000001101100001011010001);
+     send_data(32'b10111000100010111110101110011000);
+     send_data(32'b01101010110110011100110110111001);
+     send_data(32'b01111010011001011111110011100101);
+     send_data(32'b10110100010101000110000010011011);
+     send_data(32'b10011111101010110111101001011101);
+     send_data(32'b11000100010110000001100110101111);
+     send_data(32'b01110001101111011001001010101011);
+     send_data(32'b00010101001110011011000100100000);
+     send_data(32'b11010101101100101111010001100101);
+     send_data(32'b00011010101100101111010001010100);
+     send_data(32'b00001100000011010010101110111100);
+     send_data(32'b11111011101010011010110111110111);
+     send_data(32'b01000100001010010111011110001100);
+     send_data(32'b01010011011000111101101010000001);
+     send_data(32'b00110011001111111100001100010111);
+     send_data(32'b01000000000011000110001010001110);
+     send_data(32'b00100010101110110000010101001101);
+     send_data(32'b10101110101000011100110011000100);
+     send_data(32'b11110010101110111000101001001110);
+     send_data(32'b01111101111110100101000110000101);
+     send_data(32'b00010110001100011011000010110000);
+     send_data(32'b11010010010000111010010111011100);
+     send_data(32'b01101011000101000100011110110001);
+     send_data(32'b10110111001001001001101110011101);
+     send_data(32'b11011110010110011100010101010101);
+     send_data(32'b01011111100001011111010001000110);
+     send_data(32'b11000111011001111011110000100111);
+     send_data(32'b10111001111011111101110101010101);
+     send_data(32'b00001001101110000001101001011011);
+     send_data(32'b00110011111111100010111001110100);
+     send_data(32'b00001011111000101011100000011010);
+     send_data(32'b01111100000010101010100111010011);
+     send_data(32'b10111000111101101001101100000110);
+     send_data(32'b01101000000010010111101110000001);
+     send_data(32'b01010001111111001100101111101001);
+     send_data(32'b10011000000000101010000100000110);
+     send_data(32'b00100000110010001100011111000011);
+     send_data(32'b10110011111001000000101110001110);
+     send_data(32'b11000101010111001100100000111110);
+     send_data(32'b11001001101111010001101001010010);
+     send_data(32'b00001001011010010110111000000000);
+     send_data(32'b00111110111101111001111000001010);
+     send_data(32'b01101110011100001001001000000111);
+     send_data(32'b10110111110011101110100100010110);
+     send_data(32'b01010000001011011011000010100011);
+     send_data(32'b01100110001000111011001111111010);
+     send_data(32'b00100010101001010101001100010001);
+     send_data(32'b11100000001100011001110001111101);
+     send_data(32'b11101100011011011111010011101000);
+     send_data(32'b10101001010000010100110110011001);
+     send_data(32'b11000000111010100011011110001111);
+     send_data(32'b10000111001100000110110101010111);
+     send_data(32'b00101001100111001110000100000111);
+     send_data(32'b10000111110011111011000101011011);
+     send_data(32'b10110101110100000010010101110111);
+     send_data(32'b10001100000101101001110100011010);
+     send_data(32'b01111110000001010011010011111010);
+     send_data(32'b00011110011101001111000110110100);
+     send_data(32'b01110011101001000000001011010111);
+     send_data(32'b11000101001101001010001000100101);
+     send_data(32'b01011100111001111011101101000110);
+     send_data(32'b11101000101001111010101111001100);
+     send_data(32'b01111111110001001010100010000010);
+     send_data(32'b00010100110000011100111111000010);
+     send_data(32'b11111111000101010000000110001100);
+     send_data(32'b00101101111110010010000000111001);
      # 1500 $finish;
  end
  integer fd;
+ integer fd_decoder_out;
  initial begin
    fd = $fopen("encoded_bits.txt", "w");
+   fd_decoder_out = $fopen("decoder_out_bits.txt", "w");
  end
  always @(posedge clk_out) begin
    // $display("Time:%t Output bit: %b", $time, data_out);
    $fdisplay(fd, "%b", data_out);
+ end
+ always @(posedge clk_in) begin
+   $fdisplay(fd_decoder_out, "%b", data_decoder_out);
  end
  endmodule
 
