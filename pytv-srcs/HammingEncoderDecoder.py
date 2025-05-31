@@ -39,6 +39,14 @@ class hamming_spec:
         self.info_bits_str = []
         self.encoded_bits_expected = []
         self.encoded_bits_expected_str = []
+        self.frame_head_str = '01111110'
+        # synchronization parameters
+        self.backward_frame_head_error = 0   # Allowed bit errors in frame head during backward protection
+        self.backward_correct_frame_cnt = 1  # Number of correct frames during backward protection to enter sync state
+        self.capture_error = 0               # Allowed errors in frame head to remain in sync state
+        self.forward_false_frame_cnt = 0     # Number of false frames during forward protection to re-enter capture state
+        self.backward_correct_frame_cnt_width = math.ceil(math.log2(self.backward_correct_frame_cnt+1)) + 1
+        self.forward_false_frame_cnt_width = math.ceil(math.log2(self.forward_false_frame_cnt+1)) + 1
         self.generate_info_bits()
         self.generate_encoded_bits_expected()
         print(f"info_bits:")
@@ -67,7 +75,10 @@ class hamming_spec:
             encoded_bits_single_frame_str = ""
             # frame head
             encoded_bits_single_frame += [0,1,1,1,1,1,1,0]
-            encoded_bits_single_frame_str += '01111110'
+            if (i==1):
+               encoded_bits_single_frame_str += '01101110'
+            else:
+               encoded_bits_single_frame_str += '01111110'
             # encoded bits
             for j in range(0, self.n_info_groups*round(self.group_length/self.info_length)):
                 for k in range(0, self.code_length):
@@ -173,6 +184,7 @@ def ModuleHammingEncoder(hamming_spec):
     #/ wire [`hamming_spec.output_counter_len-1`:0] output_read_idx;
     #/ wire [`hamming_spec.frame_length-1`:0] tx_frame_wire;
     #/ wire [`hamming_spec.data_length-1`:0] input_data_wire;
+    #/ reg [8:0] n_frames_sent;
     if hamming_spec.flag_interleave:
         #/ wire [`hamming_spec.frame_length-1`:0] tx_frame_wire_interleaved;
         pass
@@ -188,7 +200,9 @@ def ModuleHammingEncoder(hamming_spec):
     #/ assign input_write_idx =`hamming_spec.input_counter_len`'d `hamming_spec.data_length-1`-input_counter_reg;
     #/ assign output_read_idx =`hamming_spec.output_counter_len`'d `hamming_spec.frame_length-1`-output_counter_reg;
     #/ // frame head for synchronization
-    #/ assign tx_frame_wire[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`] = `hamming_spec.frame_head_length`'b01111110;
+    #/ assign tx_frame_wire[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`] = (n_frames_sent == 1) ?`hamming_spec.frame_head_length`'b01101110 : 
+    #/                                                                                                                  (n_frames_sent == 5) ? `hamming_spec.frame_head_length`'b01101110
+    #/                                                                                                                  : `hamming_spec.frame_head_length`'b01111110;
     if hamming_spec.flag_interleave:
         #/ assign tx_frame_wire_interleaved[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`] = tx_frame_wire[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`];
         #/ // Interleaving
@@ -226,6 +240,7 @@ def ModuleHammingEncoder(hamming_spec):
     #/         data_out_reg <= 0;
     #/         encoder_ready <= 1'b1;
     #/         data_buffer_ready <= 1'b1;
+    #/         n_frames_sent <= 0;
     #/     end  else begin
     #/         if (data_valid ) begin
     #/             input_data_buffer[input_write_idx] <= data_in;
@@ -255,12 +270,12 @@ def ModuleHammingEncoder(hamming_spec):
     else:
         #/             tx_frame_buffer <= tx_frame_wire_interleaved;
         pass
-    #/         
+    #/          n_frames_sent <= n_frames_sent + 1;
     #/     end
     #/     if (frame_ready) begin
     #/         output_counter_reg <= output_counter_reg + 1;
     #/         data_out_reg <= tx_frame_buffer[output_read_idx];
-    #/  
+    #/        
     #/        // encoder_ready <= 1'b0;
     #/     end
     #/     if (output_counter_reg == `hamming_spec.frame_length-1`) begin
@@ -274,6 +289,125 @@ def ModuleHammingEncoder(hamming_spec):
     pass
     
     
+@ convert
+def ModuleSyncFrame(hamming_spec):
+    #/ module SyncFrame(
+    #/     input clk_out,
+    #/     input rst,
+    #/     input data_in,
+    #/     output is_frame_sychronized,
+    #/     output [2:0] synchronizer_state
+    #/ );
+    # state definitions
+    CAPTURE = "3'b000"
+    FORWARD_PROTECTION = "3'b001"
+    SYNC = "3'b010"
+    BACKWARD_PROTECTION = "3'b011"
+    #/ wire [2:0] synchronizer_state;
+    #/ reg [2:0] sychronizer_state_reg;
+    #/ reg [`hamming_spec.backward_correct_frame_cnt_width-1`:0] backward_correct_frame_cnt;
+    #/ reg [`hamming_spec.forward_false_frame_cnt_width-1`:0] forward_false_frame_cnt;
+    #/ reg [`hamming_spec.frame_head_length-1`:0] frame_head_buffer;
+    #/ reg [`hamming_spec.output_counter_len-1`:0] input_bit_counter;
+    #/ assign synchronizer_state = sychronizer_state_reg;
+    #/ assign is_frame_sychronized = (sychronizer_state_reg == `SYNC`)? 1'b1 : 1'b0;
+    # // sliding window register for detecting frame head  
+    #/ always @ (posedge clk_out or posedge rst)
+    #/ begin
+    #/     if (rst) begin
+    #/         sychronizer_state_reg <= `CAPTURE`;
+    #/         frame_head_buffer <= `hamming_spec.frame_length`'b0;
+    #/         // is_frame_sychronized <= 1'b0;
+    #/     end else begin
+    #/         frame_head_buffer[0] <= data_in;
+    for i in range(1, hamming_spec.frame_head_length):
+        #/          frame_head_buffer[`i`] <= frame_head_buffer[`i-1`];
+        pass
+    #/     end
+    #/ end
+    #/ // state transition logic
+    #/ always @ (posedge clk_out or posedge rst)
+    #/ begin
+    #/       if (rst) begin
+    #/              sychronizer_state_reg <= `CAPTURE`;
+    #/              backward_correct_frame_cnt <= `hamming_spec.backward_correct_frame_cnt_width`'b0;
+    #/              forward_false_frame_cnt <= `hamming_spec.forward_false_frame_cnt_width`'b0;
+    #/              // is_frame_sychronized <= 1'b0;
+    #/              // backward_protection_frame_cnt <= `hamming_spec.forward_false_frame_cnt_width`'b0;
+    #/              input_bit_counter <= `hamming_spec.output_counter_len`'b0;
+    #/          end
+    #/      case (sychronizer_state_reg)
+    #/         
+    #/          // CAPTURE:
+    #/          // if current frame buffer matches the frame head, move to BACKWARD_PROTECTION state and set correct frame counter to 1
+    #/          `CAPTURE`:
+    #/                  begin
+    #/                      if (frame_head_buffer == `hamming_spec.frame_head_length`'b`hamming_spec.frame_head_str`) begin
+    #/                          sychronizer_state_reg <= `BACKWARD_PROTECTION`;
+    #/                          backward_correct_frame_cnt <= 1;
+    #/                      end else begin 
+    #/                          sychronizer_state_reg <= `CAPTURE`;
+    #/                          input_bit_counter <= 0;
+    #/                      end
+    #/                  end
+    #/          `BACKWARD_PROTECTION`:
+    #/                  begin
+    #/                        if (input_bit_counter == `hamming_spec.output_counter_len`'d`hamming_spec.frame_length-1`) begin
+    #/                            input_bit_counter <= 0;
+    #/                            if (frame_head_buffer == `hamming_spec.frame_head_length`'b`hamming_spec.frame_head_str`) begin
+    #/                                backward_correct_frame_cnt <= backward_correct_frame_cnt + 1;
+    #/                                if (backward_correct_frame_cnt == `hamming_spec.backward_correct_frame_cnt_width`'d`hamming_spec.backward_correct_frame_cnt`) begin
+    #/                                     sychronizer_state_reg <= `SYNC`;
+    #/                                end else begin
+    #/                                     sychronizer_state_reg <= `BACKWARD_PROTECTION`;
+    #/                                end
+    #/                            end
+    #/                            else begin
+    #/                                backward_correct_frame_cnt <= 0;
+    #/                                sychronizer_state_reg <= `CAPTURE`;
+    #/                            end
+    #/                        end else begin 
+    #/                            input_bit_counter <= input_bit_counter + 1;
+    #/                            sychronizer_state_reg <= `BACKWARD_PROTECTION`;
+    #/                        end
+    #/                  end
+    #/          `SYNC`:
+    #/                  begin
+    #/                       if (input_bit_counter == `hamming_spec.output_counter_len`'d`hamming_spec.frame_length-1`) begin
+    #/                            input_bit_counter <= 0;
+    #/                            if (frame_head_buffer == `hamming_spec.frame_head_length`'b`hamming_spec.frame_head_str`) begin
+    #/                                sychronizer_state_reg <= `SYNC`;
+    #/                            end else begin 
+    #/                                sychronizer_state_reg <= `FORWARD_PROTECTION`;
+    #/                                forward_false_frame_cnt <= 0;
+    #/                            end
+    #/                       end
+    #/                  end
+    #/          `FORWARD_PROTECTION`:
+    #/                  begin
+    #/                         if (input_bit_counter == `hamming_spec.output_counter_len`'d`hamming_spec.frame_length-1`) begin
+    #/                                input_bit_counter <= 0;
+    #/                                if (frame_head_buffer == `hamming_spec.frame_head_length`'b`hamming_spec.frame_head_str`) begin
+    #/                                    sychronizer_state_reg <= `SYNC`;
+    #/                                    forward_false_frame_cnt <= 0;
+    #/                                end else begin 
+    #/                                    forward_false_frame_cnt <= forward_false_frame_cnt + 1;
+    #/                                    if (forward_false_frame_cnt == `hamming_spec.forward_false_frame_cnt_width`'d`hamming_spec.forward_false_frame_cnt`) begin
+    #/                                         sychronizer_state_reg <= `CAPTURE`;
+    #/                                     end else begin
+    #/                                         sychronizer_state_reg <= `FORWARD_PROTECTION`;
+    #/                                     end
+    #/                                end
+    #/                          end else begin
+    #/                                input_bit_counter <= input_bit_counter + 1;
+    #/                                sychronizer_state_reg <= `FORWARD_PROTECTION`;
+    #/                          end
+    #/                  end
+    #/      endcase
+    #/ end
+    #/ endmodule
+    #/ 
+    
 @ convert 
 def ModuleTb(hamming_spec):
     #/ module Tb();
@@ -285,6 +419,8 @@ def ModuleTb(hamming_spec):
     #/ wire data_out;
     #/ reg [`hamming_spec.data_length-1`:0] tx_data_buffer;
     #/ reg data_in_reg;
+    #/ wire is_frame_sychronized;
+    #/ wire [2:0] synchronizer_state;
     #/ initial begin
     #/    clk_in = 0;
     #/    clk_out = 1;
@@ -302,6 +438,14 @@ def ModuleTb(hamming_spec):
         'data_in_ready' : 'data_in_ready'
     }
     ModuleHammingEncoder(hamming_spec=hamming_spec, PORTS = hamming_encoder_ports)
+    sync_frame_ports = {
+        'clk_out' : 'clk_out',
+        'rst' : 'rst',
+        'data_in' : 'data_out',
+        'is_frame_sychronized' : 'is_frame_sychronized',
+        'synchronizer_state' :'synchronizer_state'
+    }
+    ModuleSyncFrame(hamming_spec=hamming_spec, PORTS = sync_frame_ports)
     #/ task send_data;
     #/     input [`hamming_spec.data_length-1`:0] data;
     #/     integer i;
@@ -372,7 +516,7 @@ moduleloader.set_debug_mode(True)
 moduleloader.disEnableWarning()
 
 
-my_spec = hamming_spec(flag_interleave=True)
+my_spec = hamming_spec(flag_interleave=False)
 ModuleTb(hamming_spec=my_spec)
 
 
