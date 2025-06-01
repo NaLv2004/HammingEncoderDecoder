@@ -9,7 +9,7 @@
  wire [2:0] synchronizer_state;
  reg [2:0] sychronizer_state_reg;
  reg [1:0] backward_correct_frame_cnt;
- reg [0:0] forward_false_frame_cnt;
+ reg [2:0] forward_false_frame_cnt;
  reg [7:0] frame_head_buffer;
  reg [6:0] input_bit_counter;
  reg data_sync_out_delayed;
@@ -41,9 +41,9 @@
        if (rst) begin
               sychronizer_state_reg <= 3'b000;
               backward_correct_frame_cnt <= 2'b0;
-              forward_false_frame_cnt <= 1'b0;
+              forward_false_frame_cnt <= 3'b0;
               // is_frame_sychronized <= 1'b0;
-              // backward_protection_frame_cnt <= 1'b0;
+              // backward_protection_frame_cnt <= 3'b0;
               input_bit_counter <= 7'b0;
           end
       case (sychronizer_state_reg)
@@ -105,7 +105,7 @@
                                     forward_false_frame_cnt <= 0;
                                 end else begin
                                     forward_false_frame_cnt <= forward_false_frame_cnt + 1;
-                                    if (forward_false_frame_cnt == 1'd0) begin
+                                    if (forward_false_frame_cnt == 3'd3) begin
                                          sychronizer_state_reg <= 3'b000;
                                      end else begin
                                          sychronizer_state_reg <= 3'b001;

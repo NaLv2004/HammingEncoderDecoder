@@ -23,7 +23,7 @@ from run_iverilog import run_iverilog_flow
 
 
 class hamming_spec:
-    def __init__(self, flag_interleave=False):
+    def __init__(self, flag_interleave=False, bit_sequence_generator='random', pn_generator_coeff=[], pn_generator_initial_state='1101'):
         self.code_length = 7
         self.info_length = 4
         self.frame_head_length = 8
@@ -40,15 +40,19 @@ class hamming_spec:
         self.encoded_bits_expected = []
         self.encoded_bits_expected_str = []
         self.frame_head_str = '01111110'
+        # bit sequence generator parameters
+        self.bit_sequence_generator = bit_sequence_generator  # 'random' or '15pn'
+        self.pn_generator_coeff = pn_generator_coeff
+        self.pn_generator_initial_state = pn_generator_initial_state
         # synchronization parameters
         self.backward_frame_head_error = 0   # Allowed bit errors in frame head during backward protection
         self.backward_correct_frame_cnt = 1  # Number of correct frames during backward protection to enter sync state
         self.capture_error = 0               # Allowed errors in frame head to remain in sync state
-        self.forward_false_frame_cnt = 0     # Number of false frames during forward protection to re-enter capture state
+        self.forward_false_frame_cnt = 3    # Number of false frames during forward protection to re-enter capture state
         self.backward_correct_frame_cnt_width = math.ceil(math.log2(self.backward_correct_frame_cnt+1)) + 1
         self.forward_false_frame_cnt_width = math.ceil(math.log2(self.forward_false_frame_cnt+1)) + 1
         # Set errors in frame head and transmitted bits
-        self.frame_head_errors = []   # frames with error in frame head  e.g. frame_head_errors = [1,5,6,7]
+        self.frame_head_errors = [5,6,7]   # frames with error in frame head  e.g. frame_head_errors = [1,5,6,7]
         self.generate_info_bits()
         self.generate_encoded_bits_expected()
         print(f"info_bits:")
@@ -511,7 +515,49 @@ def ModuleDecoder(hamming_spec):
     pass
     
     
-    
+@ convert
+def ModulePNGenerator(hamming_spec:hamming_spec):
+    #/ module PNGenerator(
+    #/     input clk,
+    #/     input rst,
+    #/     input en,
+    #/     output pn_out
+    #/ );
+    n_shift_registers = len(hamming_spec.pn_generator_coeff)-1
+    #/ wire clk;
+    #/ wire rst;
+    #/ wire en;
+    #/ wire pn_out;
+    for i in range(0,n_shift_registers):
+        #/ reg pn_reg_`i`;
+        pass
+    #/ assign pn_out = pn_reg_0;
+    #/ always @ (posedge clk or posedge rst)
+    #/ begin
+    #/     if (rst) begin
+    for i in range(0, n_shift_registers):
+        #/         pn_reg_`i` <= 1'b`hamming_spec.pn_generator_initial_state[i]`;
+        pass
+    #/     end else begin
+    #/         if (en) begin
+    for i in range(0, n_shift_registers-1):
+        #/             pn_reg_`i` <= pn_reg_`i+1` ;
+        pass
+    #/             pn_reg_`n_shift_registers-1` <= 
+    for i in range(0, n_shift_registers):
+        if hamming_spec.pn_generator_coeff[i+1] == 1:
+            #/                 (pn_reg_`n_shift_registers-1-i` ^ 1'b0) ^
+            pass
+        else:
+            #/                 (pn_reg_`n_shift_registers-1-i` & 1'b0) ^
+            pass
+    pass
+    #/                 1'b0;
+    #/         end
+    #/     end
+    #/ end
+    #/ endmodule
+    pass
     
     
     
@@ -642,8 +688,9 @@ moduleloader.set_debug_mode(True)
 moduleloader.disEnableWarning()
 
 
-my_spec = hamming_spec(flag_interleave=False)
+my_spec = hamming_spec(flag_interleave=False, bit_sequence_generator='15PN' ,pn_generator_coeff=[1,0,0,1,1])
 ModuleTb(hamming_spec=my_spec)
+ModulePNGenerator(hamming_spec=my_spec)
 
 
 

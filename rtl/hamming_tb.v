@@ -110,6 +110,9 @@ SingleDecoder0000000001  u_0000000008_SingleDecoder0000000001(.decoder_in(decode
  assign output_read_idx =7'd 63-output_counter_reg;
  // frame head for synchronization
  assign tx_frame_wire[63:56] =
+     (n_frames_sent == 5) ? 8'b01101110 :
+     (n_frames_sent == 6) ? 8'b01101110 :
+     (n_frames_sent == 7) ? 8'b01101110 :
      8'b01111110;
  // assign encoding input to data input buffer,  assign tx_frame_wire to encoding output
  // instantiate single encoder for each group of data
@@ -177,6 +180,46 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  endmodule
 
 
+// === Contents from: PNGenerator0000000001.v ===
+ module PNGenerator0000000001 (
+     input clk,
+     input rst,
+     input en,
+     output pn_out
+ );
+ wire clk;
+ wire rst;
+ wire en;
+ wire pn_out;
+ reg pn_reg_0;
+ reg pn_reg_1;
+ reg pn_reg_2;
+ reg pn_reg_3;
+ assign pn_out = pn_reg_0;
+ always @ (posedge clk or posedge rst)
+ begin
+     if (rst) begin
+         pn_reg_0 <= 1'b1;
+         pn_reg_1 <= 1'b1;
+         pn_reg_2 <= 1'b0;
+         pn_reg_3 <= 1'b1;
+     end else begin
+         if (en) begin
+             pn_reg_0 <= pn_reg_1 ;
+             pn_reg_1 <= pn_reg_2 ;
+             pn_reg_2 <= pn_reg_3 ;
+             pn_reg_3 <=
+                 (pn_reg_3 & 1'b0) ^
+                 (pn_reg_2 & 1'b0) ^
+                 (pn_reg_1 ^ 1'b0) ^
+                 (pn_reg_0 ^ 1'b0) ^
+                 1'b0;
+         end
+     end
+ end
+ endmodule
+
+
 // === Contents from: SingleDecoder0000000001.v ===
  module SingleDecoder0000000001 (
  input [6:0] decoder_in,
@@ -227,7 +270,7 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  wire [2:0] synchronizer_state;
  reg [2:0] sychronizer_state_reg;
  reg [1:0] backward_correct_frame_cnt;
- reg [0:0] forward_false_frame_cnt;
+ reg [2:0] forward_false_frame_cnt;
  reg [7:0] frame_head_buffer;
  reg [6:0] input_bit_counter;
  reg data_sync_out_delayed;
@@ -259,9 +302,9 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
        if (rst) begin
               sychronizer_state_reg <= 3'b000;
               backward_correct_frame_cnt <= 2'b0;
-              forward_false_frame_cnt <= 1'b0;
+              forward_false_frame_cnt <= 3'b0;
               // is_frame_sychronized <= 1'b0;
-              // backward_protection_frame_cnt <= 1'b0;
+              // backward_protection_frame_cnt <= 3'b0;
               input_bit_counter <= 7'b0;
           end
       case (sychronizer_state_reg)
@@ -323,7 +366,7 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
                                     forward_false_frame_cnt <= 0;
                                 end else begin
                                     forward_false_frame_cnt <= forward_false_frame_cnt + 1;
-                                    if (forward_false_frame_cnt == 1'd0) begin
+                                    if (forward_false_frame_cnt == 3'd3) begin
                                          sychronizer_state_reg <= 3'b000;
                                      end else begin
                                          sychronizer_state_reg <= 3'b001;
@@ -387,26 +430,26 @@ Decoder0000000001  u_0000000001_Decoder0000000001(.clk_decoder_in(clk_out), .clk
      # 20 rst = 1'b0;
      # 20 data_valid = 1'b1;
      @ (posedge clk_in);
-     send_data(32'b11110011111010110101010011110110);
-     send_data(32'b11000100100011110100110011100111);
-     send_data(32'b10101100001010100000001110001101);
-     send_data(32'b10001001101010110110011100111101);
-     send_data(32'b01101000111111110110010011010111);
-     send_data(32'b01011010000110011111001001010111);
-     send_data(32'b11011001110101000011110110000101);
-     send_data(32'b11110100111101001100110100001110);
-     send_data(32'b10100100101101101000000110100100);
-     send_data(32'b10100000101101101100010110101010);
-     send_data(32'b01011011100001011101100111110001);
-     send_data(32'b01010100001000100100110110100011);
-     send_data(32'b01010100000000000001100001001011);
-     send_data(32'b00011101010001101011111010001101);
-     send_data(32'b01101100100101101001001000110110);
-     send_data(32'b01110101111011010011010110110111);
-     send_data(32'b10101011010110010011110000000000);
-     send_data(32'b10000010100111101100011110100100);
-     send_data(32'b01110101110011101000110101110000);
-     send_data(32'b01100010100001000010000111101100);
+     send_data(32'b10100100000011100101011111100111);
+     send_data(32'b10000101100100000001000100100001);
+     send_data(32'b00001111001011000110011001100110);
+     send_data(32'b01110001001111100111100001111110);
+     send_data(32'b01010111001011010101111011010011);
+     send_data(32'b01000010110111111010100011010101);
+     send_data(32'b00111111111001001101011000001110);
+     send_data(32'b11110111101100010101111010111111);
+     send_data(32'b10011110111111011000001000110010);
+     send_data(32'b11010111010000011101101101011101);
+     send_data(32'b10010001010100101010110101011000);
+     send_data(32'b10011001010111000010010100101011);
+     send_data(32'b10100101011010000000001011110110);
+     send_data(32'b10010011111000111010001101001001);
+     send_data(32'b11111111100101100111110001101001);
+     send_data(32'b10101010111100101110001101001010);
+     send_data(32'b01011010011101101100001110110011);
+     send_data(32'b01000000000101100111011111111011);
+     send_data(32'b01110000110001101000000011010011);
+     send_data(32'b10111111000110001100000101110110);
      # 1500 $finish;
  end
  integer fd;
