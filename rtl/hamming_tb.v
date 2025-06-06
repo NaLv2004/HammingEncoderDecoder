@@ -110,9 +110,6 @@ SingleDecoder0000000001  u_0000000008_SingleDecoder0000000001(.decoder_in(decode
  assign output_read_idx =7'd 63-output_counter_reg;
  // frame head for synchronization
  assign tx_frame_wire[63:56] =
-     (n_frames_sent == 5) ? 8'b01101110 :
-     (n_frames_sent == 6) ? 8'b01101110 :
-     (n_frames_sent == 7) ? 8'b01101110 :
      8'b01111110;
  // assign encoding input to data input buffer,  assign tx_frame_wire to encoding output
  // instantiate single encoder for each group of data
@@ -176,46 +173,6 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
         // frame_ready <= 0;
      end
 
- end
- endmodule
-
-
-// === Contents from: PNGenerator0000000001.v ===
- module PNGenerator0000000001 (
-     input clk,
-     input rst,
-     input en,
-     output pn_out
- );
- wire clk;
- wire rst;
- wire en;
- wire pn_out;
- reg pn_reg_0;
- reg pn_reg_1;
- reg pn_reg_2;
- reg pn_reg_3;
- assign pn_out = pn_reg_0;
- always @ (posedge clk or posedge rst)
- begin
-     if (rst) begin
-         pn_reg_0 <= 1'b1;
-         pn_reg_1 <= 1'b1;
-         pn_reg_2 <= 1'b0;
-         pn_reg_3 <= 1'b1;
-     end else begin
-         if (en) begin
-             pn_reg_0 <= pn_reg_1 ;
-             pn_reg_1 <= pn_reg_2 ;
-             pn_reg_2 <= pn_reg_3 ;
-             pn_reg_3 <=
-                 (pn_reg_3 & 1'b0) ^
-                 (pn_reg_2 & 1'b0) ^
-                 (pn_reg_1 ^ 1'b0) ^
-                 (pn_reg_0 ^ 1'b0) ^
-                 1'b0;
-         end
-     end
  end
  endmodule
 
@@ -430,33 +387,35 @@ Decoder0000000001  u_0000000001_Decoder0000000001(.clk_decoder_in(clk_out), .clk
      # 20 rst = 1'b0;
      # 20 data_valid = 1'b1;
      @ (posedge clk_in);
-     send_data(32'b10100100000011100101011111100111);
-     send_data(32'b10000101100100000001000100100001);
-     send_data(32'b00001111001011000110011001100110);
-     send_data(32'b01110001001111100111100001111110);
-     send_data(32'b01010111001011010101111011010011);
-     send_data(32'b01000010110111111010100011010101);
-     send_data(32'b00111111111001001101011000001110);
-     send_data(32'b11110111101100010101111010111111);
-     send_data(32'b10011110111111011000001000110010);
-     send_data(32'b11010111010000011101101101011101);
-     send_data(32'b10010001010100101010110101011000);
-     send_data(32'b10011001010111000010010100101011);
-     send_data(32'b10100101011010000000001011110110);
-     send_data(32'b10010011111000111010001101001001);
-     send_data(32'b11111111100101100111110001101001);
-     send_data(32'b10101010111100101110001101001010);
-     send_data(32'b01011010011101101100001110110011);
-     send_data(32'b01000000000101100111011111111011);
-     send_data(32'b01110000110001101000000011010011);
-     send_data(32'b10111111000110001100000101110110);
-     # 1500 $finish;
+     send_data(32'b01100101110100000111000000111111);
+     send_data(32'b01011000000010000111010100011000);
+     send_data(32'b01011000010011001101001101010111);
+     send_data(32'b10111011001101101010011010011101);
+     send_data(32'b01010011010100000111010100110110);
+     send_data(32'b00001011101110011010110100000111);
+     send_data(32'b10100001100001000000010010111011);
+     send_data(32'b10010011011101011101011100101111);
+     send_data(32'b01111110101011100100001001000101);
+     send_data(32'b00111001011110001110001110101100);
+     send_data(32'b11111010101111100000101001110011);
+     send_data(32'b11101010100000100111001110101111);
+     send_data(32'b11010001001101111001101001000100);
+     send_data(32'b00011110000011111111100011111001);
+     send_data(32'b00001100001111011111100100110001);
+     send_data(32'b00101111110101011101000111001011);
+     send_data(32'b11001011100111000011010110101000);
+     send_data(32'b10110101001001100010100000111010);
+     send_data(32'b00011110010110111011001001101000);
+     send_data(32'b01000100101001110001100110100100);
+     # 15000 $finish;
  end
  integer fd;
  integer fd_decoder_out;
+ integer fd_pn_out;
  initial begin
    fd = $fopen("encoded_bits.txt", "w");
    fd_decoder_out = $fopen("decoder_out_bits.txt", "w");
+   fd_pn_out = $fopen("pn_out_bits.txt", "w");
  end
  always @(posedge clk_out) begin
    // $display("Time:%t Output bit: %b", $time, data_out);

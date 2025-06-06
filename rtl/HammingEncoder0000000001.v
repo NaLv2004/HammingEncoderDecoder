@@ -42,9 +42,6 @@
  assign output_read_idx =7'd 63-output_counter_reg;
  // frame head for synchronization
  assign tx_frame_wire[63:56] =
-     (n_frames_sent == 5) ? 8'b01101110 :
-     (n_frames_sent == 6) ? 8'b01101110 :
-     (n_frames_sent == 7) ? 8'b01101110 :
      8'b01111110;
  // assign encoding input to data input buffer,  assign tx_frame_wire to encoding output
  // instantiate single encoder for each group of data
