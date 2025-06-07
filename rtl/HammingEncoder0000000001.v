@@ -5,7 +5,8 @@
      input data_in,
      input data_valid,
      output data_out,
-     output data_in_ready
+     output data_in_ready,
+     output data_out_error
  );
  wire clk_in;
  wire clk_out;
@@ -40,6 +41,12 @@
  assign frame_ready_wire = ((input_counter_reg_delayed_clkout_1 == 31) && (input_counter_reg==0))? 1 : 0;
  assign input_write_idx =6'd 31-input_counter_reg;
  assign output_read_idx =7'd 63-output_counter_reg;
+ assign data_out_error =
+     (output_read_idx == 7'd 54) ? (~data_out) :
+     (output_read_idx == 7'd 45) ? (~data_out) :
+     (output_read_idx == 7'd 36) ? (~data_out) :
+     (output_read_idx == 7'd 27) ? (~data_out) :
+     data_out;
  // frame head for synchronization
  assign tx_frame_wire[63:56] =
      8'b01111110;

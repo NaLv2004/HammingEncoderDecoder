@@ -73,7 +73,8 @@ SingleDecoder0000000001  u_0000000008_SingleDecoder0000000001(.decoder_in(decode
      input data_in,
      input data_valid,
      output data_out,
-     output data_in_ready
+     output data_in_ready,
+     output data_out_error
  );
  wire clk_in;
  wire clk_out;
@@ -108,6 +109,12 @@ SingleDecoder0000000001  u_0000000008_SingleDecoder0000000001(.decoder_in(decode
  assign frame_ready_wire = ((input_counter_reg_delayed_clkout_1 == 31) && (input_counter_reg==0))? 1 : 0;
  assign input_write_idx =6'd 31-input_counter_reg;
  assign output_read_idx =7'd 63-output_counter_reg;
+ assign data_out_error =
+     (output_read_idx == 7'd 54) ? (~data_out) :
+     (output_read_idx == 7'd 45) ? (~data_out) :
+     (output_read_idx == 7'd 36) ? (~data_out) :
+     (output_read_idx == 7'd 27) ? (~data_out) :
+     data_out;
  // frame head for synchronization
  assign tx_frame_wire[63:56] =
      8'b01111110;
@@ -177,6 +184,50 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  endmodule
 
 
+// === Contents from: PNGenerator0000000001.v ===
+ module PNGenerator0000000001 (
+     input clk,
+     input rst,
+     input en,
+     output pn_out
+ );
+ wire clk;
+ wire rst;
+ wire en;
+ wire pn_out;
+ reg pn_reg_0;
+ reg pn_reg_1;
+ reg pn_reg_2;
+ reg pn_reg_3;
+ reg pn_reg_4;
+ assign pn_out = pn_reg_0;
+ always @ (posedge clk or posedge rst)
+ begin
+     if (rst) begin
+         pn_reg_0 <= 1'b1;
+         pn_reg_1 <= 1'b0;
+         pn_reg_2 <= 1'b1;
+         pn_reg_3 <= 1'b1;
+         pn_reg_4 <= 1'b0;
+     end else begin
+         if (en) begin
+             pn_reg_0 <= pn_reg_1 ;
+             pn_reg_1 <= pn_reg_2 ;
+             pn_reg_2 <= pn_reg_3 ;
+             pn_reg_3 <= pn_reg_4 ;
+             pn_reg_4 <=
+                 (pn_reg_4 & 1'b0) ^
+                 (pn_reg_3 ^ 1'b0) ^
+                 (pn_reg_2 & 1'b0) ^
+                 (pn_reg_1 & 1'b0) ^
+                 (pn_reg_0 ^ 1'b0) ^
+                 1'b0;
+         end
+     end
+ end
+ endmodule
+
+
 // === Contents from: SingleDecoder0000000001.v ===
  module SingleDecoder0000000001 (
  input [6:0] decoder_in,
@@ -227,7 +278,7 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  wire [2:0] synchronizer_state;
  reg [2:0] sychronizer_state_reg;
  reg [1:0] backward_correct_frame_cnt;
- reg [2:0] forward_false_frame_cnt;
+ reg [1:0] forward_false_frame_cnt;
  reg [7:0] frame_head_buffer;
  reg [6:0] input_bit_counter;
  reg data_sync_out_delayed;
@@ -259,9 +310,9 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
        if (rst) begin
               sychronizer_state_reg <= 3'b000;
               backward_correct_frame_cnt <= 2'b0;
-              forward_false_frame_cnt <= 3'b0;
+              forward_false_frame_cnt <= 2'b0;
               // is_frame_sychronized <= 1'b0;
-              // backward_protection_frame_cnt <= 3'b0;
+              // backward_protection_frame_cnt <= 2'b0;
               input_bit_counter <= 7'b0;
           end
       case (sychronizer_state_reg)
@@ -323,7 +374,7 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
                                     forward_false_frame_cnt <= 0;
                                 end else begin
                                     forward_false_frame_cnt <= forward_false_frame_cnt + 1;
-                                    if (forward_false_frame_cnt == 3'd3) begin
+                                    if (forward_false_frame_cnt == 2'd1) begin
                                          sychronizer_state_reg <= 3'b000;
                                      end else begin
                                          sychronizer_state_reg <= 3'b001;
@@ -348,6 +399,7 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  wire data_in;
  reg data_valid;
  wire data_out;
+ wire data_out_error;
  reg [31:0] tx_data_buffer;
  reg data_in_reg;
  wire is_frame_sychronized;
@@ -360,13 +412,13 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  end
  always #10 clk_in = ~clk_in;  // 20ns周期
  always #5 clk_out = ~clk_out; // 10ns周期
- assign data_in = data_in_reg;
  // Instantiate the Hamming Encoder
-HammingEncoder0000000001  u_0000000001_HammingEncoder0000000001(.clk_in(clk_in), .clk_out(clk_out), .rst(rst), .data_in(data_in), .data_valid(data_valid), .data_out(data_out), .data_in_ready(data_in_ready));
+HammingEncoder0000000001  u_0000000001_HammingEncoder0000000001(.clk_in(clk_in), .clk_out(clk_out), .rst(rst), .data_in(data_in), .data_valid(data_valid), .data_out(data_out), .data_in_ready(data_in_ready), .data_out_error(data_out_error));
  // Instantiate frame synchronizer
-SyncFrame0000000001  u_0000000001_SyncFrame0000000001(.clk_out(clk_out), .rst(rst), .data_in(data_out), .is_frame_sychronized(is_frame_sychronized), .synchronizer_state(synchronizer_state), .data_sync_out(data_sync_out));
+SyncFrame0000000001  u_0000000001_SyncFrame0000000001(.clk_out(clk_out), .rst(rst), .is_frame_sychronized(is_frame_sychronized), .synchronizer_state(synchronizer_state), .data_sync_out(data_sync_out), .data_in(data_out_error));
  // Instantiate the Hamming Decoder
 Decoder0000000001  u_0000000001_Decoder0000000001(.clk_decoder_in(clk_out), .clk_decoder_out(clk_in), .rst(rst), .decoder_data_valid(is_frame_sychronized), .data_decoder_in(data_sync_out), .data_decoder_out(data_decoder_out));
+PNGenerator0000000001  u_0000000001_PNGenerator0000000001(.clk(clk_in), .rst(rst), .en(data_valid), .pn_out(data_in));
  task send_data;
      input [31:0] data;
      integer i;
@@ -387,35 +439,17 @@ Decoder0000000001  u_0000000001_Decoder0000000001(.clk_decoder_in(clk_out), .clk
      # 20 rst = 1'b0;
      # 20 data_valid = 1'b1;
      @ (posedge clk_in);
-     send_data(32'b01100101110100000111000000111111);
-     send_data(32'b01011000000010000111010100011000);
-     send_data(32'b01011000010011001101001101010111);
-     send_data(32'b10111011001101101010011010011101);
-     send_data(32'b01010011010100000111010100110110);
-     send_data(32'b00001011101110011010110100000111);
-     send_data(32'b10100001100001000000010010111011);
-     send_data(32'b10010011011101011101011100101111);
-     send_data(32'b01111110101011100100001001000101);
-     send_data(32'b00111001011110001110001110101100);
-     send_data(32'b11111010101111100000101001110011);
-     send_data(32'b11101010100000100111001110101111);
-     send_data(32'b11010001001101111001101001000100);
-     send_data(32'b00011110000011111111100011111001);
-     send_data(32'b00001100001111011111100100110001);
-     send_data(32'b00101111110101011101000111001011);
-     send_data(32'b11001011100111000011010110101000);
-     send_data(32'b10110101001001100010100000111010);
-     send_data(32'b00011110010110111011001001101000);
-     send_data(32'b01000100101001110001100110100100);
      # 15000 $finish;
  end
  integer fd;
  integer fd_decoder_out;
  integer fd_pn_out;
+ integer fd_error_out;
  initial begin
    fd = $fopen("encoded_bits.txt", "w");
    fd_decoder_out = $fopen("decoder_out_bits.txt", "w");
    fd_pn_out = $fopen("pn_out_bits.txt", "w");
+   fd_error_out = $fopen("error_out_bits.txt", "w");
  end
  always @(posedge clk_out) begin
    // $display("Time:%t Output bit: %b", $time, data_out);
@@ -423,6 +457,12 @@ Decoder0000000001  u_0000000001_Decoder0000000001(.clk_decoder_in(clk_out), .clk
  end
  always @(posedge clk_in) begin
    $fdisplay(fd_decoder_out, "%b", data_decoder_out);
+ end
+ always @(posedge clk_out) begin
+   $fdisplay(fd_error_out, "%b", data_out_error);
+ end
+ always @(posedge clk_in) begin
+   $fdisplay(fd_pn_out, "%b", data_in);
  end
  endmodule
 

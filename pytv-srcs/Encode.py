@@ -22,6 +22,7 @@ def ModuleSingleEncoder(hamming_spec):
     
 @ convert 
 def ModuleHammingEncoder(hamming_spec):
+    is_in_frame_error = len(hamming_spec.in_frame_error_pos)
     #/ module HammingEncoder(
     #/     input clk_in,
     #/     input clk_out,
@@ -29,7 +30,13 @@ def ModuleHammingEncoder(hamming_spec):
     #/     input data_in,
     #/     input data_valid,
     #/     output data_out,
-    #/     output data_in_ready
+    if not is_in_frame_error:
+        #/     output data_in_ready
+        pass
+    if is_in_frame_error:
+        #/     output data_in_ready,
+        #/     output data_out_error    
+        pass 
     #/ );
     #/ wire clk_in;
     #/ wire clk_out;
@@ -67,6 +74,13 @@ def ModuleHammingEncoder(hamming_spec):
     #/ assign frame_ready_wire = ((input_counter_reg_delayed_clkout_1 == `hamming_spec.data_length-1`) && (input_counter_reg==0))? 1 : 0;
     #/ assign input_write_idx =`hamming_spec.input_counter_len`'d `hamming_spec.data_length-1`-input_counter_reg;
     #/ assign output_read_idx =`hamming_spec.output_counter_len`'d `hamming_spec.frame_length-1`-output_counter_reg;
+    if is_in_frame_error:
+        #/ assign data_out_error = 
+        for i_error_bit in hamming_spec.in_frame_error_pos:
+            #/     (output_read_idx == `hamming_spec.output_counter_len`'d `i_error_bit-1`) ? (~data_out) :
+            pass
+        pass
+        #/     data_out;
     #/ // frame head for synchronization
     # / assign tx_frame_wire[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`] = (n_frames_sent == 1) ?`hamming_spec.frame_head_length`'b01111110 : 
     # /                                                                                                                  (n_frames_sent == 5) ? `hamming_spec.frame_head_length`'b01111110

@@ -1,7 +1,7 @@
 import math
 import random
 class hamming_spec:
-    def __init__(self, flag_interleave=False, frame_head_error_pos=[] ,forward_false_frame_cnt=3, backward_correct_frame_cnt=1, bit_sequence_generator='random', pn_generator_coeff=[], pn_generator_initial_state='1101'):
+    def __init__(self, flag_interleave=False, frame_head_error_pos=[], in_frame_error_pos=[], forward_false_frame_cnt=3, backward_correct_frame_cnt=1, bit_sequence_generator='random', pn_generator_coeff=[], pn_generator_initial_state='1101'):
         self.code_length = 7
         self.info_length = 4
         self.frame_head_length = 8
@@ -31,6 +31,7 @@ class hamming_spec:
         self.forward_false_frame_cnt_width = math.ceil(math.log2(self.forward_false_frame_cnt+1)) + 1
         # Set errors in frame head and transmitted bits
         self.frame_head_errors = frame_head_error_pos   # frames with error in frame head  e.g. frame_head_errors = [1,5,6,7]
+        self.in_frame_error_pos = in_frame_error_pos    # error in info bits or parity bits, range is [55,0] ([63:56]) is frame head. 
         self.generate_info_bits()
         self.generate_encoded_bits_expected()
         print(f"info_bits:")

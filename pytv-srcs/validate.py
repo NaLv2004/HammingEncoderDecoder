@@ -12,13 +12,19 @@ def validate_encoder_decoder(my_spec:hamming_spec, absolute_folder_path, verilog
     encoded_bits_str = encoded_bits_str.replace('\n', '')
     # print(f"Encoded bits: {encoded_bits_str}")
     # print(f"encoded_bits_part: {encoded_bits_str[70:133]}")
-
+    error_out_bits_str = ''
+    if len(my_spec.in_frame_error_pos)>0:
+        with open (os.path.join(absolute_folder_path, 'error_out_bits.txt'), 'r') as f:
+            error_out_bits_str = f.read()
+        error_out_bits_str = error_out_bits_str.replace('\n', '')
 
     start_bit = start_bit
     for i_tx_frame in range(0, my_spec.n_tx_frames):
         end_bit = start_bit + my_spec.frame_length 
         print(f"start_from: {start_bit}, end_at: {end_bit-1}")
         encoded_bits_single_frame_str = encoded_bits_str[start_bit:end_bit]
+        if len(my_spec.in_frame_error_pos)>0:
+            error_out_bits_single_frame_str = error_out_bits_str[start_bit:end_bit]
         start_bit = end_bit 
         # compare the encoded bits with expected encoded bits
         expected_encoded_bits_single_frame_str = my_spec.encoded_bits_expected_str[i_tx_frame]
@@ -27,6 +33,9 @@ def validate_encoder_decoder(my_spec:hamming_spec, absolute_folder_path, verilog
         print(f"Info bits: {info_bits_str}")
         print(f"Expected encoded bits: {expected_encoded_bits_single_frame_str}")
         print(f"Encoded bits: {encoded_bits_single_frame_str}")
+        if len(my_spec.in_frame_error_pos)>0:
+            print(f"Encoded Bits With Error: {error_out_bits_single_frame_str}")
+            print(f"Error Positions: {my_spec.in_frame_error_pos}")
         # if equal, print 'pass' with green color
         # else, print 'fail' with red color
         if encoded_bits_single_frame_str == expected_encoded_bits_single_frame_str:
