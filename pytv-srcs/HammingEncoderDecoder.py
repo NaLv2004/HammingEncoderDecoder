@@ -40,16 +40,16 @@ clear_folder(absolute_folder_path)
 # ==============================================HAMMING CODE SPECIFICATIONS===============================================
 # # 31PN
 # At most 1 error in 1 frame, error correction would be successful.
-my_spec = hamming_spec(
-flag_interleave=False, 
-bit_sequence_generator='PN' ,
-pn_generator_coeff=[1,0,1,0,0,1] , # polynomial: x^5 + x^2 + 1
-pn_generator_initial_state='10110',
-frame_head_error_pos=[],
-in_frame_error_pos=[55, 46, 37, 28],
-forward_false_frame_cnt=1,
-backward_correct_frame_cnt=1
-)
+# my_spec = hamming_spec(
+# flag_interleave=False, 
+# bit_sequence_generator='PN' ,
+# pn_generator_coeff=[1,0,1,0,0,1] , # polynomial: x^5 + x^2 + 1
+# pn_generator_initial_state='10110',
+# frame_head_error_pos=[],
+# in_frame_error_pos=[55, 46, 37, 28],
+# forward_false_frame_cnt=1,
+# backward_correct_frame_cnt=1
+# )
 
 
 # # 31PN
@@ -68,12 +68,16 @@ backward_correct_frame_cnt=1
 
 
 # # 15PN
-# my_spec = hamming_spec(
-# flag_interleave=False, 
-# bit_sequence_generator='PN' ,
-# pn_generator_coeff=[1,0,0,1,1] ,
-# pn_generator_initial_state='1011'
-# )
+my_spec = hamming_spec(
+flag_interleave=True, 
+bit_sequence_generator='random' ,
+pn_generator_coeff=[1,0,0,1,1] ,
+pn_generator_initial_state='1011',
+forward_false_frame_cnt = 1,
+backward_correct_frame_cnt = 1,
+frame_head_error_pos=[],
+in_frame_error_pos = [55,54,37,28]
+)
 
 
 # random bits

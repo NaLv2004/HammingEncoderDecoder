@@ -22,15 +22,74 @@
  assign decoder_output_read_idx =6'd 31-decoder_output_counter_reg;
  assign decoder_input_write_idx =7'd 63-decoder_input_counter_reg;
  assign data_decoder_out = decoder_data_out_reg;//decoder_output_buffer[decoder_output_read_idx];
+ wire [63:0] decoder_input_data_wire_interleaved;
+ assign decoder_input_data_wire_interleaved[63:56] = decoder_input_data_wire[63:56];
+ // Interleaving
+ assign decoder_input_data_wire_interleaved[0] = decoder_input_data_wire[0];
+ assign decoder_input_data_wire_interleaved[1] = decoder_input_data_wire[8];
+ assign decoder_input_data_wire_interleaved[2] = decoder_input_data_wire[16];
+ assign decoder_input_data_wire_interleaved[3] = decoder_input_data_wire[24];
+ assign decoder_input_data_wire_interleaved[4] = decoder_input_data_wire[32];
+ assign decoder_input_data_wire_interleaved[5] = decoder_input_data_wire[40];
+ assign decoder_input_data_wire_interleaved[6] = decoder_input_data_wire[48];
+ assign decoder_input_data_wire_interleaved[7] = decoder_input_data_wire[1];
+ assign decoder_input_data_wire_interleaved[8] = decoder_input_data_wire[9];
+ assign decoder_input_data_wire_interleaved[9] = decoder_input_data_wire[17];
+ assign decoder_input_data_wire_interleaved[10] = decoder_input_data_wire[25];
+ assign decoder_input_data_wire_interleaved[11] = decoder_input_data_wire[33];
+ assign decoder_input_data_wire_interleaved[12] = decoder_input_data_wire[41];
+ assign decoder_input_data_wire_interleaved[13] = decoder_input_data_wire[49];
+ assign decoder_input_data_wire_interleaved[14] = decoder_input_data_wire[2];
+ assign decoder_input_data_wire_interleaved[15] = decoder_input_data_wire[10];
+ assign decoder_input_data_wire_interleaved[16] = decoder_input_data_wire[18];
+ assign decoder_input_data_wire_interleaved[17] = decoder_input_data_wire[26];
+ assign decoder_input_data_wire_interleaved[18] = decoder_input_data_wire[34];
+ assign decoder_input_data_wire_interleaved[19] = decoder_input_data_wire[42];
+ assign decoder_input_data_wire_interleaved[20] = decoder_input_data_wire[50];
+ assign decoder_input_data_wire_interleaved[21] = decoder_input_data_wire[3];
+ assign decoder_input_data_wire_interleaved[22] = decoder_input_data_wire[11];
+ assign decoder_input_data_wire_interleaved[23] = decoder_input_data_wire[19];
+ assign decoder_input_data_wire_interleaved[24] = decoder_input_data_wire[27];
+ assign decoder_input_data_wire_interleaved[25] = decoder_input_data_wire[35];
+ assign decoder_input_data_wire_interleaved[26] = decoder_input_data_wire[43];
+ assign decoder_input_data_wire_interleaved[27] = decoder_input_data_wire[51];
+ assign decoder_input_data_wire_interleaved[28] = decoder_input_data_wire[4];
+ assign decoder_input_data_wire_interleaved[29] = decoder_input_data_wire[12];
+ assign decoder_input_data_wire_interleaved[30] = decoder_input_data_wire[20];
+ assign decoder_input_data_wire_interleaved[31] = decoder_input_data_wire[28];
+ assign decoder_input_data_wire_interleaved[32] = decoder_input_data_wire[36];
+ assign decoder_input_data_wire_interleaved[33] = decoder_input_data_wire[44];
+ assign decoder_input_data_wire_interleaved[34] = decoder_input_data_wire[52];
+ assign decoder_input_data_wire_interleaved[35] = decoder_input_data_wire[5];
+ assign decoder_input_data_wire_interleaved[36] = decoder_input_data_wire[13];
+ assign decoder_input_data_wire_interleaved[37] = decoder_input_data_wire[21];
+ assign decoder_input_data_wire_interleaved[38] = decoder_input_data_wire[29];
+ assign decoder_input_data_wire_interleaved[39] = decoder_input_data_wire[37];
+ assign decoder_input_data_wire_interleaved[40] = decoder_input_data_wire[45];
+ assign decoder_input_data_wire_interleaved[41] = decoder_input_data_wire[53];
+ assign decoder_input_data_wire_interleaved[42] = decoder_input_data_wire[6];
+ assign decoder_input_data_wire_interleaved[43] = decoder_input_data_wire[14];
+ assign decoder_input_data_wire_interleaved[44] = decoder_input_data_wire[22];
+ assign decoder_input_data_wire_interleaved[45] = decoder_input_data_wire[30];
+ assign decoder_input_data_wire_interleaved[46] = decoder_input_data_wire[38];
+ assign decoder_input_data_wire_interleaved[47] = decoder_input_data_wire[46];
+ assign decoder_input_data_wire_interleaved[48] = decoder_input_data_wire[54];
+ assign decoder_input_data_wire_interleaved[49] = decoder_input_data_wire[7];
+ assign decoder_input_data_wire_interleaved[50] = decoder_input_data_wire[15];
+ assign decoder_input_data_wire_interleaved[51] = decoder_input_data_wire[23];
+ assign decoder_input_data_wire_interleaved[52] = decoder_input_data_wire[31];
+ assign decoder_input_data_wire_interleaved[53] = decoder_input_data_wire[39];
+ assign decoder_input_data_wire_interleaved[54] = decoder_input_data_wire[47];
+ assign decoder_input_data_wire_interleaved[55] = decoder_input_data_wire[55];
  // decoding the input data (instantiate 8 single decoders)
-SingleDecoder0000000001  u_0000000001_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[6:0]), .decoder_out(decoder_output_data_wire[3:0]));
-SingleDecoder0000000001  u_0000000002_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[13:7]), .decoder_out(decoder_output_data_wire[7:4]));
-SingleDecoder0000000001  u_0000000003_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[20:14]), .decoder_out(decoder_output_data_wire[11:8]));
-SingleDecoder0000000001  u_0000000004_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[27:21]), .decoder_out(decoder_output_data_wire[15:12]));
-SingleDecoder0000000001  u_0000000005_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[34:28]), .decoder_out(decoder_output_data_wire[19:16]));
-SingleDecoder0000000001  u_0000000006_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[41:35]), .decoder_out(decoder_output_data_wire[23:20]));
-SingleDecoder0000000001  u_0000000007_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[48:42]), .decoder_out(decoder_output_data_wire[27:24]));
-SingleDecoder0000000001  u_0000000008_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire[55:49]), .decoder_out(decoder_output_data_wire[31:28]));
+SingleDecoder0000000001  u_0000000001_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire_interleaved[6:0]), .decoder_out(decoder_output_data_wire[3:0]));
+SingleDecoder0000000001  u_0000000002_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire_interleaved[13:7]), .decoder_out(decoder_output_data_wire[7:4]));
+SingleDecoder0000000001  u_0000000003_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire_interleaved[20:14]), .decoder_out(decoder_output_data_wire[11:8]));
+SingleDecoder0000000001  u_0000000004_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire_interleaved[27:21]), .decoder_out(decoder_output_data_wire[15:12]));
+SingleDecoder0000000001  u_0000000005_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire_interleaved[34:28]), .decoder_out(decoder_output_data_wire[19:16]));
+SingleDecoder0000000001  u_0000000006_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire_interleaved[41:35]), .decoder_out(decoder_output_data_wire[23:20]));
+SingleDecoder0000000001  u_0000000007_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire_interleaved[48:42]), .decoder_out(decoder_output_data_wire[27:24]));
+SingleDecoder0000000001  u_0000000008_SingleDecoder0000000001(.decoder_in(decoder_input_data_wire_interleaved[55:49]), .decoder_out(decoder_output_data_wire[31:28]));
  always @(posedge clk_decoder_in or posedge rst)
  begin
      if (rst) begin
@@ -98,6 +157,7 @@ SingleDecoder0000000001  u_0000000008_SingleDecoder0000000001(.decoder_in(decode
  wire [63:0] tx_frame_wire;
  wire [31:0] input_data_wire;
  reg [8:0] n_frames_sent;
+ wire [63:0] tx_frame_wire_interleaved;
  reg frame_ready;
  reg encoder_ready;
  reg data_buffer_ready;
@@ -111,13 +171,71 @@ SingleDecoder0000000001  u_0000000008_SingleDecoder0000000001(.decoder_in(decode
  assign output_read_idx =7'd 63-output_counter_reg;
  assign data_out_error =
      (output_read_idx == 7'd 54) ? (~data_out) :
-     (output_read_idx == 7'd 45) ? (~data_out) :
+     (output_read_idx == 7'd 53) ? (~data_out) :
      (output_read_idx == 7'd 36) ? (~data_out) :
      (output_read_idx == 7'd 27) ? (~data_out) :
      data_out;
  // frame head for synchronization
  assign tx_frame_wire[63:56] =
      8'b01111110;
+ assign tx_frame_wire_interleaved[63:56] = tx_frame_wire[63:56];
+ // Interleaving
+ assign tx_frame_wire_interleaved[0] = tx_frame_wire[0];
+ assign tx_frame_wire_interleaved[8] = tx_frame_wire[1];
+ assign tx_frame_wire_interleaved[16] = tx_frame_wire[2];
+ assign tx_frame_wire_interleaved[24] = tx_frame_wire[3];
+ assign tx_frame_wire_interleaved[32] = tx_frame_wire[4];
+ assign tx_frame_wire_interleaved[40] = tx_frame_wire[5];
+ assign tx_frame_wire_interleaved[48] = tx_frame_wire[6];
+ assign tx_frame_wire_interleaved[1] = tx_frame_wire[7];
+ assign tx_frame_wire_interleaved[9] = tx_frame_wire[8];
+ assign tx_frame_wire_interleaved[17] = tx_frame_wire[9];
+ assign tx_frame_wire_interleaved[25] = tx_frame_wire[10];
+ assign tx_frame_wire_interleaved[33] = tx_frame_wire[11];
+ assign tx_frame_wire_interleaved[41] = tx_frame_wire[12];
+ assign tx_frame_wire_interleaved[49] = tx_frame_wire[13];
+ assign tx_frame_wire_interleaved[2] = tx_frame_wire[14];
+ assign tx_frame_wire_interleaved[10] = tx_frame_wire[15];
+ assign tx_frame_wire_interleaved[18] = tx_frame_wire[16];
+ assign tx_frame_wire_interleaved[26] = tx_frame_wire[17];
+ assign tx_frame_wire_interleaved[34] = tx_frame_wire[18];
+ assign tx_frame_wire_interleaved[42] = tx_frame_wire[19];
+ assign tx_frame_wire_interleaved[50] = tx_frame_wire[20];
+ assign tx_frame_wire_interleaved[3] = tx_frame_wire[21];
+ assign tx_frame_wire_interleaved[11] = tx_frame_wire[22];
+ assign tx_frame_wire_interleaved[19] = tx_frame_wire[23];
+ assign tx_frame_wire_interleaved[27] = tx_frame_wire[24];
+ assign tx_frame_wire_interleaved[35] = tx_frame_wire[25];
+ assign tx_frame_wire_interleaved[43] = tx_frame_wire[26];
+ assign tx_frame_wire_interleaved[51] = tx_frame_wire[27];
+ assign tx_frame_wire_interleaved[4] = tx_frame_wire[28];
+ assign tx_frame_wire_interleaved[12] = tx_frame_wire[29];
+ assign tx_frame_wire_interleaved[20] = tx_frame_wire[30];
+ assign tx_frame_wire_interleaved[28] = tx_frame_wire[31];
+ assign tx_frame_wire_interleaved[36] = tx_frame_wire[32];
+ assign tx_frame_wire_interleaved[44] = tx_frame_wire[33];
+ assign tx_frame_wire_interleaved[52] = tx_frame_wire[34];
+ assign tx_frame_wire_interleaved[5] = tx_frame_wire[35];
+ assign tx_frame_wire_interleaved[13] = tx_frame_wire[36];
+ assign tx_frame_wire_interleaved[21] = tx_frame_wire[37];
+ assign tx_frame_wire_interleaved[29] = tx_frame_wire[38];
+ assign tx_frame_wire_interleaved[37] = tx_frame_wire[39];
+ assign tx_frame_wire_interleaved[45] = tx_frame_wire[40];
+ assign tx_frame_wire_interleaved[53] = tx_frame_wire[41];
+ assign tx_frame_wire_interleaved[6] = tx_frame_wire[42];
+ assign tx_frame_wire_interleaved[14] = tx_frame_wire[43];
+ assign tx_frame_wire_interleaved[22] = tx_frame_wire[44];
+ assign tx_frame_wire_interleaved[30] = tx_frame_wire[45];
+ assign tx_frame_wire_interleaved[38] = tx_frame_wire[46];
+ assign tx_frame_wire_interleaved[46] = tx_frame_wire[47];
+ assign tx_frame_wire_interleaved[54] = tx_frame_wire[48];
+ assign tx_frame_wire_interleaved[7] = tx_frame_wire[49];
+ assign tx_frame_wire_interleaved[15] = tx_frame_wire[50];
+ assign tx_frame_wire_interleaved[23] = tx_frame_wire[51];
+ assign tx_frame_wire_interleaved[31] = tx_frame_wire[52];
+ assign tx_frame_wire_interleaved[39] = tx_frame_wire[53];
+ assign tx_frame_wire_interleaved[47] = tx_frame_wire[54];
+ assign tx_frame_wire_interleaved[55] = tx_frame_wire[55];
  // assign encoding input to data input buffer,  assign tx_frame_wire to encoding output
  // instantiate single encoder for each group of data
 SingleEncoder0000000001  u_0000000001_SingleEncoder0000000001(.data_in(input_data_wire[3:0]), .data_out(tx_frame_wire[6:0]));
@@ -165,7 +283,7 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
      input_counter_reg_delayed_clkout_3 <= input_counter_reg_delayed_clkout_2;
      if (frame_ready_wire) begin
           frame_ready <= 1'b1;
-             tx_frame_buffer <= tx_frame_wire;
+             tx_frame_buffer <= tx_frame_wire_interleaved;
           n_frames_sent <= n_frames_sent + 1;
      end
      if (frame_ready) begin
@@ -180,50 +298,6 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
         // frame_ready <= 0;
      end
 
- end
- endmodule
-
-
-// === Contents from: PNGenerator0000000001.v ===
- module PNGenerator0000000001 (
-     input clk,
-     input rst,
-     input en,
-     output pn_out
- );
- wire clk;
- wire rst;
- wire en;
- wire pn_out;
- reg pn_reg_0;
- reg pn_reg_1;
- reg pn_reg_2;
- reg pn_reg_3;
- reg pn_reg_4;
- assign pn_out = pn_reg_0;
- always @ (posedge clk or posedge rst)
- begin
-     if (rst) begin
-         pn_reg_0 <= 1'b1;
-         pn_reg_1 <= 1'b0;
-         pn_reg_2 <= 1'b1;
-         pn_reg_3 <= 1'b1;
-         pn_reg_4 <= 1'b0;
-     end else begin
-         if (en) begin
-             pn_reg_0 <= pn_reg_1 ;
-             pn_reg_1 <= pn_reg_2 ;
-             pn_reg_2 <= pn_reg_3 ;
-             pn_reg_3 <= pn_reg_4 ;
-             pn_reg_4 <=
-                 (pn_reg_4 & 1'b0) ^
-                 (pn_reg_3 ^ 1'b0) ^
-                 (pn_reg_2 & 1'b0) ^
-                 (pn_reg_1 & 1'b0) ^
-                 (pn_reg_0 ^ 1'b0) ^
-                 1'b0;
-         end
-     end
  end
  endmodule
 
@@ -412,13 +486,13 @@ SingleEncoder0000000001  u_0000000008_SingleEncoder0000000001(.data_in(input_dat
  end
  always #10 clk_in = ~clk_in;  // 20ns周期
  always #5 clk_out = ~clk_out; // 10ns周期
+ assign data_in = data_in_reg;
  // Instantiate the Hamming Encoder
 HammingEncoder0000000001  u_0000000001_HammingEncoder0000000001(.clk_in(clk_in), .clk_out(clk_out), .rst(rst), .data_in(data_in), .data_valid(data_valid), .data_out(data_out), .data_in_ready(data_in_ready), .data_out_error(data_out_error));
  // Instantiate frame synchronizer
 SyncFrame0000000001  u_0000000001_SyncFrame0000000001(.clk_out(clk_out), .rst(rst), .is_frame_sychronized(is_frame_sychronized), .synchronizer_state(synchronizer_state), .data_sync_out(data_sync_out), .data_in(data_out_error));
  // Instantiate the Hamming Decoder
 Decoder0000000001  u_0000000001_Decoder0000000001(.clk_decoder_in(clk_out), .clk_decoder_out(clk_in), .rst(rst), .decoder_data_valid(is_frame_sychronized), .data_decoder_in(data_sync_out), .data_decoder_out(data_decoder_out));
-PNGenerator0000000001  u_0000000001_PNGenerator0000000001(.clk(clk_in), .rst(rst), .en(data_valid), .pn_out(data_in));
  task send_data;
      input [31:0] data;
      integer i;
@@ -439,6 +513,26 @@ PNGenerator0000000001  u_0000000001_PNGenerator0000000001(.clk(clk_in), .rst(rst
      # 20 rst = 1'b0;
      # 20 data_valid = 1'b1;
      @ (posedge clk_in);
+     send_data(32'b11111100011000011000011110010000);
+     send_data(32'b00000011010100111000101010001001);
+     send_data(32'b11111110000110010001101100111001);
+     send_data(32'b11111110011011101011011101001011);
+     send_data(32'b01000100101101010111101100100100);
+     send_data(32'b01011010000010110111000000101100);
+     send_data(32'b11011000100100111001010101001001);
+     send_data(32'b11101001010101000011111100011101);
+     send_data(32'b01101001011001111100000011001011);
+     send_data(32'b11000001001111010000000011110100);
+     send_data(32'b11110011011101110010000011100000);
+     send_data(32'b01010101100011000101110101110110);
+     send_data(32'b11001110111100110101111101100110);
+     send_data(32'b11010110111001000110101011111101);
+     send_data(32'b11100111100111100110001000101101);
+     send_data(32'b01111000010011001000101010011110);
+     send_data(32'b11110110010011111110010001000000);
+     send_data(32'b01111100111000011000000011110100);
+     send_data(32'b10011101111110000001111110111110);
+     send_data(32'b00101010110010101100110100001000);
      # 15000 $finish;
  end
  integer fd;
@@ -460,9 +554,6 @@ PNGenerator0000000001  u_0000000001_PNGenerator0000000001(.clk(clk_in), .rst(rst
  end
  always @(posedge clk_out) begin
    $fdisplay(fd_error_out, "%b", data_out_error);
- end
- always @(posedge clk_in) begin
-   $fdisplay(fd_pn_out, "%b", data_in);
  end
  endmodule
 

@@ -50,6 +50,19 @@ def ModuleDecoder(hamming_spec):
     #/ assign decoder_output_read_idx =`hamming_spec.input_counter_len`'d `hamming_spec.data_length-1`-decoder_output_counter_reg;
     #/ assign decoder_input_write_idx =`hamming_spec.output_counter_len`'d `hamming_spec.frame_length-1`-decoder_input_counter_reg;
     #/ assign data_decoder_out = decoder_data_out_reg;//decoder_output_buffer[decoder_output_read_idx];
+    if hamming_spec.flag_interleave:
+        #/ wire [`hamming_spec.frame_length-1`:0] decoder_input_data_wire_interleaved;
+        pass
+    if hamming_spec.flag_interleave:
+        #/ assign decoder_input_data_wire_interleaved[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`] = decoder_input_data_wire[`hamming_spec.frame_length-1`:`hamming_spec.frame_length-hamming_spec.frame_head_length`];
+        #/ // Interleaving
+        n_codewords = hamming_spec.n_info_groups*math.ceil(hamming_spec.group_length/hamming_spec.info_length)
+        for i_codeword in range(0, n_codewords):
+            for j_bit in range(0, hamming_spec.code_length):
+                #/ assign decoder_input_data_wire_interleaved[`i_codeword*hamming_spec.code_length+j_bit`] = decoder_input_data_wire[`i_codeword+j_bit*n_codewords`];
+                pass
+            pass
+        pass
     #/ // decoding the input data (instantiate 8 single decoders)
     for i in range(0, hamming_spec.n_info_groups*math.ceil(hamming_spec.group_length/hamming_spec.info_length)):
         low_bit_in = i*hamming_spec.info_length
@@ -60,6 +73,8 @@ def ModuleDecoder(hamming_spec):
             'decoder_in' : f'decoder_input_data_wire[{high_bit_out}:{low_bit_out}]',
             'decoder_out' : f'decoder_output_data_wire[{high_bit_in}:{low_bit_in}]'
         }
+        if hamming_spec.flag_interleave:
+            ports_single_decoder['decoder_in'] = f'decoder_input_data_wire_interleaved[{high_bit_out}:{low_bit_out}]'
         ModuleSingleDecoder(hamming_spec=hamming_spec, PORTS = ports_single_decoder)
         pass
     #/ always @(posedge clk_decoder_in or posedge rst)
