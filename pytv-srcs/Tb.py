@@ -17,6 +17,7 @@ from Encode import ModuleHammingEncoder
 from Decode import ModuleDecoder
 from Sync import ModuleSyncFrame
 from PN import ModulePNGenerator
+from PN import ModuleRepetitiveBitSeqGenerator
 
 
 @ convert 
@@ -89,6 +90,14 @@ def ModuleTb(hamming_spec:hamming_spec):
             'pn_out' : 'data_in'
         }
         ModulePNGenerator(hamming_spec=hamming_spec, PORTS = pn_generator_ports)
+    if hamming_spec.bit_sequence_generator == 'RepetitiveSeq':
+        repetitive_bit_seq_generator_ports = {
+            'clk' : 'clk_in',
+            'rst' : 'rst',
+            'en' : 'data_valid',
+            'pn_out' : 'data_in'
+        }
+        ModuleRepetitiveBitSeqGenerator(hamming_spec=hamming_spec, PORTS = repetitive_bit_seq_generator_ports)
     #/ task send_data;
     #/     input [`hamming_spec.data_length-1`:0] data;
     #/     integer i;

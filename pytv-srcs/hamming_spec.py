@@ -1,7 +1,11 @@
 import math
 import random
 class hamming_spec:
-    def __init__(self, flag_interleave=False, frame_head_error_pos=[], in_frame_error_pos=[], forward_false_frame_cnt=3, backward_correct_frame_cnt=1, bit_sequence_generator='random', pn_generator_coeff=[], pn_generator_initial_state='1101'):
+    def __init__(self, flag_interleave=False, 
+    frame_head_error_pos=[],  in_frame_error_pos=[], 
+    forward_false_frame_cnt=3, backward_correct_frame_cnt=1, 
+    bit_sequence_generator='random', pn_generator_coeff=[], pn_generator_initial_state='1101',
+    repetitive_length=16, repetitive_seq_init_state='1111111100000000'):
         self.code_length = 7
         self.info_length = 4
         self.frame_head_length = 8
@@ -22,6 +26,8 @@ class hamming_spec:
         self.bit_sequence_generator = bit_sequence_generator  # 'random' or 'PN'
         self.pn_generator_coeff = pn_generator_coeff
         self.pn_generator_initial_state = pn_generator_initial_state
+        self.repetitive_length = repetitive_length
+        self.repetitive_seq_init_state = repetitive_seq_init_state
         # synchronization parameters
         self.backward_frame_head_error = 0   # Allowed bit errors in frame head during backward protection
         self.backward_correct_frame_cnt = backward_correct_frame_cnt  # Number of correct frames during backward protection to enter sync state
@@ -84,8 +90,20 @@ class hamming_spec:
                 self.info_bits.append(info_bits_single_frame)
                 self.info_bits_str.append(info_bits_single_frame_str)
                 start_bit = end_bit
-                
-                
+        elif self.bit_sequence_generator == 'RepetitiveSeq':
+            if (len(self.repetitive_seq_init_state)!= self.repetitive_length):
+                raise ValueError("The length of repetitive_seq_init_state should be equal to repetitive_length")
+            repetitive_seq = [int(x) for x in self.repetitive_seq_init_state]
+            num_seq = math.floor(self.n_tx_frames * self.data_length / self.repetitive_length)+100
+            repetitive_seq_gen = repetitive_seq * num_seq
+            start_bit = 0
+            for i in range(0, self.n_tx_frames):
+                end_bit = start_bit + self.data_length
+                info_bits_single_frame = repetitive_seq_gen[start_bit:end_bit]
+                info_bits_single_frame_str = "".join([str(x) for x in info_bits_single_frame])
+                self.info_bits.append(info_bits_single_frame)
+                self.info_bits_str.append(info_bits_single_frame_str)
+                start_bit = end_bit
 
         
             

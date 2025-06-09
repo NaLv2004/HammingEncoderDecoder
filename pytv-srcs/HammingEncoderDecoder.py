@@ -67,7 +67,67 @@ clear_folder(absolute_folder_path)
 
 
 
+# # Repetitive Seq
+my_spec = hamming_spec(
+flag_interleave=False, 
+bit_sequence_generator='RepetitiveSeq' ,
+pn_generator_coeff=[1,0,0,1,1] ,
+pn_generator_initial_state='1011',
+forward_false_frame_cnt = 1,
+backward_correct_frame_cnt = 1,
+frame_head_error_pos=[],
+in_frame_error_pos = []
+)
+
 # # 15PN
+my_spec = hamming_spec(
+flag_interleave=False, 
+bit_sequence_generator='PN' ,
+pn_generator_coeff=[1,0,0,1,1] ,
+pn_generator_initial_state='1011',
+forward_false_frame_cnt = 1,
+backward_correct_frame_cnt = 1,
+frame_head_error_pos=[],
+in_frame_error_pos = []
+)
+
+## Sync
+my_spec = hamming_spec(
+flag_interleave=False, 
+bit_sequence_generator='PN' ,
+pn_generator_coeff=[1,0,0,1,1] ,
+pn_generator_initial_state='1011',
+forward_false_frame_cnt = 1,
+backward_correct_frame_cnt = 2,
+frame_head_error_pos=[2,3,10,11,12],
+in_frame_error_pos = []
+)
+
+## 15PN error (1bit/frame)
+my_spec = hamming_spec(
+flag_interleave=False, 
+bit_sequence_generator='random' ,
+pn_generator_coeff=[1,0,0,1,1] ,
+pn_generator_initial_state='1011',
+forward_false_frame_cnt = 1,
+backward_correct_frame_cnt = 1,
+frame_head_error_pos=[],
+in_frame_error_pos = [55,46,37,28]
+)
+
+## 15PN error (2bit/frame)
+my_spec = hamming_spec(
+flag_interleave=False, 
+bit_sequence_generator='random' ,
+pn_generator_coeff=[1,0,0,1,1] ,
+pn_generator_initial_state='1011',
+forward_false_frame_cnt = 1,
+backward_correct_frame_cnt = 1,
+frame_head_error_pos=[],
+in_frame_error_pos = [55,54,37,28]
+)
+
+## Interleacving for burst error
 my_spec = hamming_spec(
 flag_interleave=True, 
 bit_sequence_generator='random' ,

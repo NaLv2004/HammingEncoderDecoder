@@ -45,4 +45,43 @@ def ModulePNGenerator(hamming_spec):
     #/ end
     #/ endmodule
     pass
+
+
+
+@ convert
+def ModuleRepetitiveBitSeqGenerator(hamming_spec):
+    #/ module RepetitiveBitSeqGenerator(
+    #/     input clk,
+    #/     input rst,
+    #/     input en,
+    #/     output pn_out
+    #/ );
+    n_shift_registers = hamming_spec.repetitive_length
+    #/ wire clk;
+    #/ wire rst;
+    #/ wire en;
+    #/ wire pn_out;
+    for i in range(0,n_shift_registers):
+        #/ reg pn_reg_`i`;
+        pass
+    #/ assign pn_out = pn_reg_0;
+    #/ always @ (posedge clk or posedge rst)
+    #/ begin
+    #/     if (rst) begin
+    for i in range(0, n_shift_registers):
+        #/         pn_reg_`i` <= 1'b`hamming_spec.repetitive_seq_init_state[i]`;
+        pass
+    #/     end else begin
+    #/         if (en) begin
+    for i in range(0, n_shift_registers-1):
+        #/             pn_reg_`i` <= pn_reg_`i+1` ;
+        pass
+    
+    #/            pn_reg_`n_shift_registers-1` <= pn_reg_0;
+    #/         end
+    #/ 
+    #/     end
+    #/ end
+    #/ endmodule
+    pass
     
